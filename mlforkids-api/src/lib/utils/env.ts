@@ -31,6 +31,7 @@ export const SMTP_USER = 'SMTP_USER';
 export const SMTP_PASS = 'SMTP_PASS';
 export const SMTP_REPLY_TO = 'SMTP_REPLY_TO';
 const MAINTENANCE_MODE = 'MAINTENANCE_MODE';
+const ACCOUNTS_ENABLED = 'ACCOUNTS_ENABLED';
 
 
 const DEFAULT = [
@@ -80,6 +81,12 @@ function isPostgresEnvVar(env: string): boolean {
 
 export function inMaintenanceMode() {
     return process.env[MAINTENANCE_MODE] === 'true';
+}
+
+// Whether the accounts system (teacher sign-up, student/class management, Auth0 login) is available
+// Defaults to enabled - accounts are only disabled when ACCOUNTS_ENABLED is explicitly set to 'false', so existing deployments are unaffected. When disabled, the only way to use the site is the anonymous "Try it now" session-user flow
+export function accountsEnabled() {
+    return process.env[ACCOUNTS_ENABLED] !== 'false';
 }
 
 export function getSiteHostUrl() {

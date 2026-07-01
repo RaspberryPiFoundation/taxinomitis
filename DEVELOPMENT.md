@@ -132,6 +132,10 @@ docker run -p 3000:3000 \
   mlforkids-api
 ```
 
+Set `-e ACCOUNTS_ENABLED=false` to disable the accounts system (teacher sign-up, student/class management, and Auth0 login) for both the API and the UI, leaving only the anonymous "Try it now" mode.
+
 **Note:** Use `host.docker.internal` on macOS and Windows, or `172.17.0.1` on Linux to reference the host's PostgreSQL server from within the container.
+
+**Running without accounts:** add `-e ACCOUNTS_ENABLED=false` to the `docker run` command to disable the accounts system (teacher sign-up, student/class management, and Auth0 login) for both the API and the UI, leaving only the anonymous "Try it now" mode. This flag is read at runtime, so you can toggle it by restarting the container.
 
 The website will be running at `http://localhost:3000`.

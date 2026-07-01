@@ -81,7 +81,14 @@ export default function setup(app: Express.Application): void {
     else {
         // API route handlers
         registerBluemixApis(app);
-        registerUserApis(app);
+        if (env.accountsEnabled()) {
+            // account management (teacher sign-up, student/class/tenant management) and teacher-only Watson credential management. Leaving these unregistered when accounts are disabled means the endpoints return 404 and are unreachable.
+            registerUserApis(app);
+            registerWatsonApis(app);
+        }
+        else {
+            log.info('Accounts are disabled - account management APIs will not be registered');
+        }
         registerProjectApis(app);
         registerLocalProjectApis(app);
         registerTrainingApis(app);
@@ -90,7 +97,6 @@ export default function setup(app: Express.Application): void {
         registerModelApis(app);
         registerScratchApis(app);
         registerAppInventorApis(app);
-        registerWatsonApis(app);
         registerClassifierApis(app);
         registerNgramApis(app);
         registerSessionUserApis(app);

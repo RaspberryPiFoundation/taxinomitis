@@ -55,6 +55,11 @@ if (env.inMaintenanceMode()) {
     log.error('Site is running in maintenance mode');
 }
 
+// check if the accounts system has been disabled
+if (!env.accountsEnabled()) {
+    log.warn('Accounts are disabled - only anonymous "Try it now" sessions are available');
+}
+
 console.log('[STARTUP] Initializing services...');
 // prepare Slack API for reporting alerts
 slack.init();

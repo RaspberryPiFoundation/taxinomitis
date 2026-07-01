@@ -1,5 +1,6 @@
 // external dependencies
 import * as express from 'express';
+import * as fs from 'fs';
 import * as path from 'path';
 import * as compression from 'compression';
 // local dependencies
@@ -197,6 +198,44 @@ export function setupUI(app: express.Application): void {
     app.use('/stories', express.static(storiesfolder, { index: 'intro.html', maxAge : constants.ONE_YEAR }));
 
     const indexHtml: string = path.join(__dirname, '/../../../web/dynamic');
+
+    // Inject runtime feature flags into index.html so they can be controlled by environment variables at "docker run" time (without rebuilding the front-end)
+    const injectedIndexHtml = buildIndexHtmlWithRuntimeConfig(path.join(indexHtml, 'index.html'));
+    if (injectedIndexHtml) {
+        const serveInjectedIndex = (req: express.Request, res: express.Response) => {
+            res.set('Content-Type', 'text/html').send(injectedIndexHtml);
+        };
+        app.get('/', compression(), serveInjectedIndex);
+        app.get('/index.html', compression(), serveInjectedIndex);
+    }
+
     app.use('/', compression(), express.static(indexHtml, { maxAge : constants.ONE_HOUR }));
+}
+
+
+/**
+ * Reads the built index.html and injects a script that exposes the current
+ *  runtime feature-flag values as globals (read by the front-end during
+ *  Angular bootstrap). Returns undefined if the file cannot be read or the
+ *  expected injection point is missing, so the caller falls back to serving
+ *  the static file unmodified
+ */
+function buildIndexHtmlWithRuntimeConfig(indexHtmlFile: string): string | undefined {
+    let html: string;
+    try {
+        html = fs.readFileSync(indexHtmlFile, 'utf8');
+    }
+    catch (err) {
+        return undefined;
+    }
+
+    const runtimeConfigScript = '<script>window.ACCOUNTS_ENABLED = ' +
+                                    env.accountsEnabled() +
+                                ';</script>';
+
+    if (html.indexOf('</head>') === -1) {
+        return undefined;
+    }
+    return html.replace('</head>', runtimeConfigScript + '</head>');
 }
 

@@ -117,6 +117,7 @@ The **mlforkids-api** service can be deployed to Heroku using the Dockerfile in 
    ```sh
    npm run build
    docker build -t mlforkids-api .
+   heroku container:login
    heroku container:push web -a your-app-name
    heroku container:release web -a your-app-name
    ```
@@ -132,3 +133,7 @@ Since `DATABASE_URL` is being used, individual PostgreSQL environment variables 
 
 **Minimum required config vars** (aside from `DATABASE_URL`):
 - `HOST` - Set to `0.0.0.0`
+
+**Optional config vars:**
+- `MAINTENANCE_MODE` - Set to `true` to return an error for all API requests (read-only mode).
+- `ACCOUNTS_ENABLED` - Set to `false` to run the site without accounts. This disables teacher sign-up, student/class management, and Auth0 login (both the APIs and the UI), leaving only the anonymous "Try it now" mode. It defaults to enabled, so omitting it keeps the normal behaviour. The flag is read at runtime, so it controls both the API and the front-end without needing to rebuild the image; change it and restart.

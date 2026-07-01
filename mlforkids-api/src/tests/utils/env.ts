@@ -38,6 +38,44 @@ describe('Utils - env', () => {
         }
     });
 
+    describe('accountsEnabled', () => {
+
+        let oldAccountsEnabled: string | undefined;
+
+        before(() => {
+            oldAccountsEnabled = process.env.ACCOUNTS_ENABLED;
+        });
+        after(() => {
+            if (oldAccountsEnabled === undefined) {
+                delete process.env.ACCOUNTS_ENABLED;
+            }
+            else {
+                process.env.ACCOUNTS_ENABLED = oldAccountsEnabled;
+            }
+        });
+
+        it('should be enabled by default when the variable is not set', () => {
+            delete process.env.ACCOUNTS_ENABLED;
+            assert.strictEqual(env.accountsEnabled(), true);
+        });
+
+        it('should be disabled only when explicitly set to false', () => {
+            process.env.ACCOUNTS_ENABLED = 'false';
+            assert.strictEqual(env.accountsEnabled(), false);
+        });
+
+        it('should be enabled for any other value', () => {
+            process.env.ACCOUNTS_ENABLED = 'true';
+            assert.strictEqual(env.accountsEnabled(), true);
+
+            process.env.ACCOUNTS_ENABLED = '';
+            assert.strictEqual(env.accountsEnabled(), true);
+
+            process.env.ACCOUNTS_ENABLED = 'no';
+            assert.strictEqual(env.accountsEnabled(), true);
+        });
+    });
+
 });
 
 

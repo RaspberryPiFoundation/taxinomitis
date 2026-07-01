@@ -1,3 +1,8 @@
+<div ng-if="failure" class="alert alert-danger pageheadermsg" role="alert" id="sessionuserfailure">
+    <span translate translate-values="{ message: failure.message }">LOGIN.ERROR</span><br/>
+    <em ng-if="failure.status >= 500" translate>LOGIN.ERROR_HELP</em>
+</div>
+
 <div class="container welcome">
     <div class="row">
         <div class="col-md-6">
@@ -7,7 +12,7 @@
                 <button
                     ng-if="!isAuthenticated"
                     ng-hide="inMaintenanceMode"
-                    ui-sref="login"
+                    ng-click="vm.getStarted()"
                     class="btn btn-primary" translate>WELCOME.GET_STARTED</button>
                 <button
                     ng-if="!isAuthenticated"

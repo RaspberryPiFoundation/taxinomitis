@@ -24,11 +24,15 @@
         $stateProvider
             .state('home', {
                 url: '',
-                templateUrl: 'static/components/welcome/welcome.html'
+                controller: 'WelcomeController',
+                templateUrl: 'static/components/welcome/welcome.html',
+                controllerAs: 'vm'
             })
             .state('welcome', {
                 url: '/welcome',
-                templateUrl: 'static/components/welcome/welcome.html'
+                controller: 'WelcomeController',
+                templateUrl: 'static/components/welcome/welcome.html',
+                controllerAs: 'vm'
             })
             .state('login', {
                 url: '/login',
