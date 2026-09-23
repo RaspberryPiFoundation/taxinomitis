@@ -4,11 +4,13 @@
 
 FROM node:22 AS builder
 
+# run the app in a folder owned by the node user
+# (the legacy Docker builder, which Heroku uses, creates WORKDIR folders as root even after USER, so set the owner before switching user)
+WORKDIR /usr/src/build
+RUN chown node:node /usr/src/build
+
 # don't run as root
 USER node
-
-# run the app in a folder owned by the node user
-WORKDIR /usr/src/build
 
 # install build dependencies
 COPY --chown=node:node *.json ./
@@ -43,11 +45,12 @@ RUN ls -l /usr/src/build
 
 FROM node:22
 
-# don't run as root
-USER node
-
 # run the app in a folder owned by the node user
 WORKDIR /usr/src/app
+RUN chown node:node /usr/src/app
+
+# don't run as root
+USER node
 
 # install runtime dependencies
 COPY --chown=node:node package*.json ./
