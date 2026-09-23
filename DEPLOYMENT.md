@@ -117,8 +117,9 @@ Do these steps before the first deploy. Until the database schema is loaded (ste
 
 3. Load the database schema once, from the repo root. This needs `psql` installed locally:
    ```sh
-   heroku pg:psql -a your-app-name < mlforkids-api/sql/postgresql.sql
+   heroku pg:psql -a your-app-name -f mlforkids-api/sql/postgresql.sql
    ```
+
    The script's `ALTER DATABASE mlforkidsdb ...` statement will fail, because Heroku names the database differently. That's expected, because the app sets the schema search path on each connection instead. Let the script carry on past the error, because the statements after it create the `session-users` class that "Try it now" needs. That means not running it with `ON_ERROR_STOP` set.
 
 4. Set the [config vars](#config-vars):
