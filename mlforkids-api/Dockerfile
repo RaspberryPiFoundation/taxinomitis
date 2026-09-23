@@ -17,7 +17,6 @@ COPY --chown=node:node *.json ./
 RUN npm install
 
 # get the build source
-COPY --chown=node:node *.js ./
 COPY --chown=node:node custom_typings custom_typings
 COPY --chown=node:node src src
 COPY --chown=node:node public public
