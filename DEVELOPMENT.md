@@ -116,6 +116,14 @@ From the `mlforkids-api` directory:
 docker build -t mlforkids-api .
 ```
 
+By default, the front-end is built for machinelearningforkids.co.uk, which includes that site's Sentry error reporting and production Auth0 config. To build it for anywhere else, set the `DEPLOYMENT` build arg. `local` matches what a non-Docker `npm run build` produces:
+
+```sh
+docker build --build-arg DEPLOYMENT=local -t mlforkids-api .
+```
+
+Any value other than `machinelearningforkids.co.uk` leaves out the Sentry reporting and uses the development Auth0 config. `DEPLOYMENT` is only used when building the front-end, so it can't be changed with `docker run -e`.
+
 ### Running the Docker container
 
 Make sure PostgreSQL is running on your host machine, then run:

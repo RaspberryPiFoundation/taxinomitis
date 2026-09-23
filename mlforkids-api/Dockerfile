@@ -25,9 +25,10 @@ COPY --chown=node:node build-scripts build-scripts
 # confirm the source
 RUN ls -l /usr/src/build
 
-# customize build for use with machinelearningforkids.co.uk
-# TODO - how can this be provided to buildruns dynamically?
-ENV DEPLOYMENT=machinelearningforkids.co.uk
+# customise the front-end build for the site it will be deployed to
+# defaults to machinelearningforkids.co.uk (which includes its Sentry error reporting and production Auth0 config), build for anywhere else with:
+#  --build-arg DEPLOYMENT=<name>
+ARG DEPLOYMENT=machinelearningforkids.co.uk
 
 # run the build
 RUN npm run buildprod
