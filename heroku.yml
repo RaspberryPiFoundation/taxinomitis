@@ -1,0 +1,8 @@
+# see "Deploying mlforkids-api to Heroku" in DEPLOYMENT.md
+build:
+  docker:
+    web: mlforkids-api/Dockerfile
+  config:
+    DEPLOYMENT: heroku
+run:
+  web: npm start

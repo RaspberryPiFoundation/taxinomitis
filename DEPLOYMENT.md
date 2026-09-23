@@ -8,9 +8,12 @@ The Machine Learning for Kids site is made up of a few different pieces. This do
   - [Where data lives](#where-data-lives)
   - [Where users are authenticated](#where-users-are-authenticated)
   - [Where third-party APIs are accessed](#where-third-party-apis-are-accessed)
-  - [Deploying mlforkids-api to Heroku (Docker)](#deploying-mlforkids-api-to-heroku-docker)
-    - [Setup Steps](#setup-steps)
-    - [Minimum Configuration for Heroku](#minimum-configuration-for-heroku)
+  - [Deploying mlforkids-api to Heroku](#deploying-mlforkids-api-to-heroku)
+    - [How the build works](#how-the-build-works)
+    - [One-time app setup](#one-time-app-setup)
+    - [Config vars](#config-vars)
+    - [Scheduled cleanup job](#scheduled-cleanup-job)
+    - [Limitations](#limitations)
 ---
 ## The bits that make up the site
 
@@ -86,54 +89,91 @@ Data from third-party services (Spotify and Wikipedia) is made available in Scra
 
 ---
 
-## Deploying mlforkids-api to Heroku (Docker)
+## Deploying mlforkids-api to Heroku
 
-The **mlforkids-api** service can be deployed to Heroku using the Dockerfile in `./mlforkids-api` directory with the Heroku Container Registry.
+This section covers deploying **mlforkids-api** (the main website and API) to Heroku as a Docker image. Heroku builds the image from [`heroku.yml`](./heroku.yml), and deploys happen through a Heroku pipeline connected to this GitHub repo. Setting up the pipeline and its GitHub integration isn't covered here.
 
-### Setup Steps
+This deployment doesn't use any IBM Cloud services, and it runs without accounts, so only anonymous "Try it now" sessions are available. See [Limitations](#limitations) for what that rules out.
 
-1. From the repository root, change into `mlforkids-api`:
+### How the build works
+
+Heroku reads [`heroku.yml`](./heroku.yml) from the repo root and builds the `web` process from [`mlforkids-api/Dockerfile`](./mlforkids-api/Dockerfile). Heroku uses the directory containing the Dockerfile as the build context, which here is `mlforkids-api/`. `heroku.yml` has to stay at the repo root, because that's the only place Heroku will look for it.
+
+`heroku.yml` also sets the `DEPLOYMENT` build arg to `heroku`, so the front-end is built without machinelearningforkids.co.uk's Sentry error reporting and production Auth0 config. Any value other than `machinelearningforkids.co.uk` has the same effect. `DEPLOYMENT` is only read at build time, so changing it means editing `heroku.yml` and redeploying.
+
+### One-time app setup
+
+Do these steps before the first deploy. Until the database schema is loaded (step 3), the app crashes on startup.
+
+1. Set the app's stack to `container`, so that Heroku builds it from `heroku.yml`:
    ```sh
-   cd mlforkids-api
+   heroku stack:set container -a your-app-name
    ```
 
-2. Create a Heroku app:
-   ```sh
-   heroku create your-app-name
-   ```
-
-3. Add Heroku Postgres addon (automatically sets `DATABASE_URL`):
+2. Add Heroku Postgres. It sets `DATABASE_URL`, which the app uses (over SSL) instead of the individual `POSTGRESQL*` variables:
    ```sh
    heroku addons:create heroku-postgresql:essential-0 -a your-app-name
    ```
 
-4. Set required config vars (see [Minimum Configuration](#minimum-configuration-for-heroku) below):
+3. Load the database schema once, from the repo root. This needs `psql` installed locally:
    ```sh
-   heroku config:set DEPLOYMENT=heroku AUTH0_DOMAIN=your.auth0.com -a your-app-name
-   # ... set other required vars
+   heroku pg:psql -a your-app-name < mlforkids-api/sql/postgresql.sql
+   ```
+   The script's `ALTER DATABASE mlforkidsdb ...` statement will fail, because Heroku names the database differently. That's expected, because the app sets the schema search path on each connection instead. Let the script carry on past the error, because the statements after it create the `session-users` class that "Try it now" needs. That means not running it with `ON_ERROR_STOP` set.
+
+4. Set the [config vars](#config-vars):
+   ```sh
+   heroku config:set ACCOUNTS_ENABLED=false NODE_ENV=production -a your-app-name
    ```
 
-5. Build and deploy with Docker:
+5. Add the [scheduled cleanup job](#scheduled-cleanup-job).
+
+If the app was deployed before the schema was loaded, restart it afterwards with `heroku restart -a your-app-name`.
+
+After this, deploys go through the pipeline's GitHub integration, either automatically or manually. You can watch startup with `heroku logs --tail -a your-app-name`.
+
+### Config vars
+
+| Config var | Value | Notes |
+| ---------- | ----- | ----- |
+| `DATABASE_URL` | Set by Heroku Postgres | Replaces the individual `POSTGRESQL*` variables. |
+| `ACCOUNTS_ENABLED` | `false` | Turns off teacher sign-up, student and class management, and Auth0 login, in both the API and the UI. Only anonymous "Try it now" sessions remain. |
+| `NODE_ENV` | `production` | Sends the app's logs to stdout and stderr, so they show up in `heroku logs`. Without it, the logs are written to a file inside the dyno. |
+
+You don't need to set `PORT` (Heroku sets it) or `HOST` (it defaults to `0.0.0.0`). You don't need any Auth0, SMTP or IBM Cloud config either.
+
+Don't set `DEPLOYMENT` as a config var, it belongs in `heroku.yml` as a build arg instead.
+
+### Scheduled cleanup job
+
+Each "Try it now" session creates a temporary user that expires after 4 hours. Expired users stay in the database until a cleanup job deletes them. The site allows at most 3,500 temporary users, and expired ones count towards that limit. Without the cleanup job, "Try it now" will eventually fail for everyone with "There are too many students trying the site".
+
+Run the job every hour with [Heroku Scheduler](https://devcenter.heroku.com/articles/scheduler):
+
+1. Add the add-on:
    ```sh
-   npm run build
-   docker build -t mlforkids-api .
-   heroku container:login
-   heroku container:push web -a your-app-name
-   heroku container:release web -a your-app-name
+   heroku addons:create scheduler:standard -a your-app-name
    ```
 
-6. View logs to verify startup:
+2. In the Scheduler dashboard, add an hourly job with this command:
    ```sh
-   heroku logs --tail -a your-app-name
+   npm run codeenginejob
    ```
 
-### Minimum Configuration for Heroku
+Each deleted session also queues a request to delete its files from object storage. Those requests can never run here where object storage is not available, so they build up in the `pendingjobs` table at one row per session. Nothing is ever written to object storage in this deployment, so they're safe to clear:
+```sh
+heroku pg:psql -a your-app-name -c "DELETE FROM mlforkidsdb.pendingjobs;"
+```
 
-Since `DATABASE_URL` is being used, individual PostgreSQL environment variables (`POSTGRESQLHOST`, `POSTGRESQLPORT`, etc.) are automatically skipped. The Heroku Postgres addon provides `DATABASE_URL` automatically.
+### Limitations
 
-**Minimum required config vars** (aside from `DATABASE_URL`):
-- `HOST` - Set to `0.0.0.0`
+These features depend on services that this deployment doesn't have:
 
-**Optional config vars:**
-- `MAINTENANCE_MODE` - Set to `true` to return an error for all API requests (read-only mode).
-- `ACCOUNTS_ENABLED` - Set to `false` to run the site without accounts. This disables teacher sign-up, student/class management, and Auth0 login (both the APIs and the UI), leaving only the anonymous "Try it now" mode. It defaults to enabled, so omitting it keeps the normal behaviour. The flag is read at runtime, so it controls both the API and the front-end without needing to rebuild the image; change it and restart.
+- **"Recognising text" projects:** models are trained by IBM Watson Assistant, whether the project is stored in the browser or in the cloud. Training a text model fails.
+- **"Recognising numbers" projects:** models are trained by the separate numbers service in [`mlforkids-newnumbers`](./mlforkids-newnumbers). It has no IBM dependencies, but deploying it isn't covered here. Without it, training fails. To use one, set `NUMBERS_SERVICE`, `NUMBERS_SERVICE_USER`, `NUMBERS_SERVICE_PASS` and `NUMBERS_SERVICE_HOSTS`.
+- **Cloud project storage:** images and sounds for cloud projects are stored in IBM Cloud Object Storage, so store projects in the browser instead.
+- **Scratch:** Scratch is served at `/scratch/` by the separate [`mlforkids-scratch`](./mlforkids-scratch) component, a static nginx site that this app doesn't serve. Links into Scratch end up in a redirect loop unless something routes `/scratch/` on the same domain to a copy of it.
+
+"Recognising images", "recognising sounds", "predicting numbers" and "generating text" projects all train in the browser and don't need anything else.
+
+Some features also call machinelearningforkids.co.uk directly, wherever the site is deployed. For example, "generating text" projects look up Wikipedia through `proxy.machinelearningforkids.co.uk`.
