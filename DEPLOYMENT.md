@@ -138,7 +138,7 @@ After this, deploys go through the pipeline's GitHub integration, either automat
 | Config var | Value | Notes |
 | ---------- | ----- | ----- |
 | `DATABASE_URL` | Set by Heroku Postgres | Replaces the individual `POSTGRESQL*` variables. |
-| `ACCOUNTS_ENABLED` | `false` | Turns off teacher sign-up, student and class management, and Auth0 login, in both the API and the UI. Only anonymous "Try it now" sessions remain. |
+| `ACCOUNTS_ENABLED` | `false` | Turns off teacher sign-up, student and class management, and Auth0 login, in both the API and the UI, and hides the option to store projects in the cloud. Only anonymous "Try it now" sessions remain. |
 | `NODE_ENV` | `production` | Sends the app's logs to stdout and stderr, so they show up in `heroku logs`. Without it, the logs are written to a file inside the dyno. |
 
 You don't need to set `PORT` (Heroku sets it) or `HOST` (it defaults to `0.0.0.0`). You don't need any Auth0, SMTP or IBM Cloud config either.
@@ -172,7 +172,7 @@ These features depend on services that this deployment doesn't have:
 
 - **"Recognising text" projects:** models are trained by IBM Watson Assistant, whether the project is stored in the browser or in the cloud. Training a text model fails.
 - **"Recognising numbers" projects:** models are trained by the separate numbers service in [`mlforkids-newnumbers`](./mlforkids-newnumbers). It has no IBM dependencies, but deploying it isn't covered here. Without it, training fails. To use one, set `NUMBERS_SERVICE`, `NUMBERS_SERVICE_USER`, `NUMBERS_SERVICE_PASS` and `NUMBERS_SERVICE_HOSTS`.
-- **Cloud project storage:** images and sounds for cloud projects are stored in IBM Cloud Object Storage, so store projects in the browser instead.
+- **Cloud project storage:** images and sounds for cloud projects are stored in IBM Cloud Object Storage. With accounts off, the option to store projects in the cloud is hidden, so projects are stored in the browser. A browser that can't store projects can't create them at all, and the site shows a warning.
 - **Scratch:** Scratch is served at `/scratch/` by the separate [`mlforkids-scratch`](./mlforkids-scratch) component, a static nginx site that this app doesn't serve. Links into Scratch end up in a redirect loop unless something routes `/scratch/` on the same domain to a copy of it.
 
 "Recognising images", "recognising sounds", "predicting numbers" and "generating text" projects all train in the browser and don't need anything else.

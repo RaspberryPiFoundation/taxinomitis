@@ -12,11 +12,11 @@
             'trainingService',
             'storageService',
             'browserStorageService',
-            '$state', '$translate', '$mdDialog', '$q'
+            '$state', '$translate', '$mdDialog', '$q', '$rootScope'
         ];
 
 
-    function DatasetsController(authService, projectsService, datasetsService, loggerService, trainingService, storageService, browserStorageService, $state, $translate, $mdDialog, $q) {
+    function DatasetsController(authService, projectsService, datasetsService, loggerService, trainingService, storageService, browserStorageService, $state, $translate, $mdDialog, $q, $rootScope) {
 
         var vm = this;
         vm.authService = authService;
@@ -246,12 +246,14 @@
                 locals : {
                     dataset : dataset,
                     testratio : defaultTestRatio,
-                    localStorageSupported : localStorageSupported
+                    localStorageSupported : localStorageSupported,
+                    accountsEnabled : $rootScope.accountsEnabled
                 },
                 controller : function ($scope, locals) {
                     $scope.dataset = locals.dataset;
                     $scope.testratio = locals.testratio;
                     $scope.localStorageSupported = locals.localStorageSupported;
+                    $scope.accountsEnabled = locals.accountsEnabled;
                     $scope.hide = function() {
                         $mdDialog.hide();
                     };
