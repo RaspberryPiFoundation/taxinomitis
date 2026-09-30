@@ -63,7 +63,8 @@
         "PROJECT_LABEL": "Gå till dina <strong>projekt</strong>",
         "STEP_1_TEXT": "Samla exempel på saker som du vill känna igen",
         "STEP_2_TEXT": "Använd exemplen för att träna en dator att känna igen dem",
-        "STEP_3_TEXT": "Skapa ett spel i Scratch som använder datorns förmåga att känna igen dem"
+        "STEP_3_TEXT": "Skapa ett spel i Scratch som använder datorns förmåga att känna igen dem",
+        "SESSION_LIMIT": "No account needed. Your projects last for {{ duration }} after you click \"Get started\", and then they're deleted. To keep a project, save it to a file from your Projects page."
     },
     "LOGIN": {
         "TITLE": "Kom igång med maskininlärning",
@@ -196,7 +197,8 @@
             "NOTES_1": "Where do you want to store this project?",
             "NOTES_2": "Storing in your web browser removes limits on how big your project can be.",
             "NOTES_3": "Storing in the cloud will let you access the project from any computer.",
-            "PROMPT": "Please choose where you would like to store your project"
+            "PROMPT": "Please choose where you would like to store your project",
+            "BROWSER_UNSUPPORTED": "Your web browser can't store projects. Please try a different web browser."
         },
         "TYPES": {
             "TYPELABEL": "Project Type",

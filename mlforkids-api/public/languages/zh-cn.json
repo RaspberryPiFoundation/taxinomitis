@@ -63,7 +63,8 @@
         "PROJECT_LABEL": "转到<strong>项目</strong> ",
         "STEP_1_TEXT": "收集您想要识别的事物的例子",
         "STEP_2_TEXT": "使用示例训练计算机能够识别它们",
-        "STEP_3_TEXT": "在Scratch中制作一个使用计算机识别它们的能力的游戏"
+        "STEP_3_TEXT": "在Scratch中制作一个使用计算机识别它们的能力的游戏",
+        "SESSION_LIMIT": "No account needed. Your projects last for {{ duration }} after you click \"Get started\", and then they're deleted. To keep a project, save it to a file from your Projects page."
     },
     "LOGIN": {
         "TITLE": "机器学习入门",
@@ -196,7 +197,8 @@
             "NOTES_1": "你想把这个项目存在哪里？",
             "NOTES_2": "存在你的浏览器里可以无视项目大小的限制。",
             "NOTES_3": "存在云端可以让你从任意一台电脑访问项目",
-            "PROMPT": "请选择你希望保存项目的位置"
+            "PROMPT": "请选择你希望保存项目的位置",
+            "BROWSER_UNSUPPORTED": "Your web browser can't store projects. Please try a different web browser."
         },
         "TYPES": {
             "TYPELABEL": "项目类型",

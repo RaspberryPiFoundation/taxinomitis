@@ -63,7 +63,8 @@
         "PROJECT_LABEL": "Πήγαινε στα <strong>Έργα</strong> σου",
         "STEP_1_TEXT": "Συγκέντρωσε παραδείγματα για αυτό που θέλεις να αναγνωρίζει ο υπολογιστής",
         "STEP_2_TEXT": "Χρησιμοποίησε τα παραδείγματα για να εκπαιδεύσεις τον υπολογιστή να το αναγνωρίζει",
-        "STEP_3_TEXT": "Φτιάξτε ένα παιχνίδι στο Scratch που χρησιμοποιεί την ικανότητα του υπολογιστή να το αναγνωρίζει"
+        "STEP_3_TEXT": "Φτιάξτε ένα παιχνίδι στο Scratch που χρησιμοποιεί την ικανότητα του υπολογιστή να το αναγνωρίζει",
+        "SESSION_LIMIT": "No account needed. Your projects last for {{ duration }} after you click \"Get started\", and then they're deleted. To keep a project, save it to a file from your Projects page."
     },
     "LOGIN": {
         "TITLE": "Ξεκίνησε με τη μηχανική μάθηση",
@@ -196,7 +197,8 @@
             "NOTES_1": "Where do you want to store this project?",
             "NOTES_2": "Storing in your web browser removes limits on how big your project can be.",
             "NOTES_3": "Storing in the cloud will let you access the project from any computer.",
-            "PROMPT": "Please choose where you would like to store your project"
+            "PROMPT": "Please choose where you would like to store your project",
+            "BROWSER_UNSUPPORTED": "Your web browser can't store projects. Please try a different web browser."
         },
         "TYPES": {
             "TYPELABEL": "Project Type",

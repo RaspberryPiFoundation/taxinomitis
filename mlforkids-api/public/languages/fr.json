@@ -63,7 +63,8 @@
         "PROJECT_LABEL": "Aller à vos <strong>Projets</strong>",
         "STEP_1_TEXT": "Recueillez des exemples de choses que vous voulez être capable de reconnaître",
         "STEP_2_TEXT": "Utilisez les exemples pour entraîner un ordinateur afin qu'il soit capable de les reconnaître",
-        "STEP_3_TEXT": "Réaliser un jeu dans Scratch qui utilise la capacité de l'ordinateur à les reconnaître"
+        "STEP_3_TEXT": "Réaliser un jeu dans Scratch qui utilise la capacité de l'ordinateur à les reconnaître",
+        "SESSION_LIMIT": "No account needed. Your projects last for {{ duration }} after you click \"Get started\", and then they're deleted. To keep a project, save it to a file from your Projects page."
     },
     "LOGIN": {
         "TITLE": "Commencez avec l'apprentissage machine",
@@ -196,7 +197,8 @@
             "NOTES_1": "Où souhaitez-vous stocker ce projet ?",
             "NOTES_2": "Le stockage dans votre navigateur web ne limite pas la taille de votre projet.",
             "NOTES_3": "Le stockage dans le nuage vous permettra d'accéder au projet à partir de n'importe quel ordinateur.",
-            "PROMPT": "Please choose where you would like to store your project"
+            "PROMPT": "Please choose where you would like to store your project",
+            "BROWSER_UNSUPPORTED": "Your web browser can't store projects. Please try a different web browser."
         },
         "TYPES": {
             "TYPELABEL": "Type de projet",

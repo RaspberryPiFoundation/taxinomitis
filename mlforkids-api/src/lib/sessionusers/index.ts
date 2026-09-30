@@ -23,7 +23,8 @@ export const CLASS_NAME = 'session-users';
 // once the class is full, how long we should wait before checking again
 const CHECK_WINDOW = 10 * 1000; // 10 seconds
 
-const SESSION_LIFESPAN = 4 * 60 * 60 * 1000; // 4 hours
+/** How long a "Try it now" session lasts (also shown to users on the welcome page when accounts are disabled) */
+export const SESSION_LIFESPAN = 4 * 60 * 60 * 1000; // 4 hours
 
 /** The number of users that can be created in this class. After this, the class is considered full.  */
 const MAX_ALLOWED_USERS = 3500;

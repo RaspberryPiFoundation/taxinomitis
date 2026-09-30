@@ -69,7 +69,8 @@
         "PROJECT_LABEL": "Đi tới <strong>Các dự án của bạn</strong>",
         "STEP_1_TEXT": "Thu thập các ví dụ về những điều bạn muốn có thể nhận ra",
         "STEP_2_TEXT": "Sử dụng các ví dụ để đào tạo một máy tính để có thể nhận ra chúng",
-        "STEP_3_TEXT": "Tạo một trò chơi trong Scratch sử dụng khả năng nhận dạng chúng của máy tính"
+        "STEP_3_TEXT": "Tạo một trò chơi trong Scratch sử dụng khả năng nhận dạng chúng của máy tính",
+        "SESSION_LIMIT": "No account needed. Your projects last for {{ duration }} after you click \"Get started\", and then they're deleted. To keep a project, save it to a file from your Projects page."
     },
     "LOGIN": {
         "TITLE": "Hãy bắt đầu với học máy",
@@ -202,7 +203,8 @@
             "NOTES_1": "Where do you want to store this project?",
             "NOTES_2": "Storing in your web browser removes limits on how big your project can be.",
             "NOTES_3": "Storing in the cloud will let you access the project from any computer.",
-            "PROMPT": "Please choose where you would like to store your project"
+            "PROMPT": "Please choose where you would like to store your project",
+            "BROWSER_UNSUPPORTED": "Your web browser can't store projects. Please try a different web browser."
         },
         "TYPES": {
             "TYPELABEL": "Project Type",

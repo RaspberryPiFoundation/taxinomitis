@@ -63,7 +63,8 @@
         "PROJECT_LABEL": "Zu deinen <strong>Projekten</strong>",
         "STEP_1_TEXT": "Sammle Beispiele von Sachen, die du erkennen möchtest",
         "STEP_2_TEXT": "Benutze die Beispiele, um den Computer zu trainieren, die Sachen zu erkennen",
-        "STEP_3_TEXT": "Erstelle ein Projekt in Scratch, das die Fähigkeit des Computers nutzt, die Sachen zu erkennen"
+        "STEP_3_TEXT": "Erstelle ein Projekt in Scratch, das die Fähigkeit des Computers nutzt, die Sachen zu erkennen",
+        "SESSION_LIMIT": "No account needed. Your projects last for {{ duration }} after you click \"Get started\", and then they're deleted. To keep a project, save it to a file from your Projects page."
     },
     "LOGIN": {
         "TITLE": "Los geht's mit Machine Learning",
@@ -196,7 +197,8 @@
             "NOTES_1": "Where do you want to store this project?",
             "NOTES_2": "Storing in your web browser removes limits on how big your project can be.",
             "NOTES_3": "Storing in the cloud will let you access the project from any computer.",
-            "PROMPT": "Please choose where you would like to store your project"
+            "PROMPT": "Please choose where you would like to store your project",
+            "BROWSER_UNSUPPORTED": "Your web browser can't store projects. Please try a different web browser."
         },
         "TYPES": {
             "TYPELABEL": "Project Type",

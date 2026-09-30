@@ -67,7 +67,8 @@
     "PROJECT_LABEL": "Գնացեք ձեր <strong>Նախագծեր</strong>",
     "STEP_1_TEXT": "Հավաքեք այնպիսի բաների օրինակներ, որոնք ցանկանում եք ճանաչել",
     "STEP_2_TEXT": "Օգտագործեք օրինակները՝ սովորեցնելով համակարգիչը ճանաչել դրանք",
-    "STEP_3_TEXT": "Ստեղծեք խաղ Scratch-ով, որն օգտագործում է դրանք ճանաչելու համակարգչի հնարավորությունը"
+    "STEP_3_TEXT": "Ստեղծեք խաղ Scratch-ով, որն օգտագործում է դրանք ճանաչելու համակարգչի հնարավորությունը",
+    "SESSION_LIMIT": "No account needed. Your projects last for {{ duration }} after you click \"Get started\", and then they're deleted. To keep a project, save it to a file from your Projects page."
   },
   "LOGIN": {
     "TITLE": "Սկսեք մեքենայական ուսուցմամբ",
@@ -200,7 +201,8 @@
       "NOTES_1": "Որտե՞ղ եք ցանկանում պահել այս նախագիծը:",
       "NOTES_2": "Ձեր վեբ բրաուզերում պահելը վերացնում է ձեր նախագծի մեծության սահմանափակումները:",
       "NOTES_3": "Ամպում պահելը թույլ կտա մուտք գործել նախագիծ ցանկացած համակարգչից:",
-      "PROMPT": "Խնդրում ենք ընտրել, թե որտեղ եք ցանկանում պահել ձեր նախագիծը"
+      "PROMPT": "Խնդրում ենք ընտրել, թե որտեղ եք ցանկանում պահել ձեր նախագիծը",
+      "BROWSER_UNSUPPORTED": "Your web browser can't store projects. Please try a different web browser."
     },
     "TYPES": {
       "TYPELABEL": "Ծրագրի տեսակը",

@@ -69,7 +69,8 @@
         "PROJECT_LABEL": "Siirry <strong>projekteihisi</strong>",
         "STEP_1_TEXT": "Kerää esimerkkejä asioista, jotka haluat tietokoneen oppivan tunnistamaan",
         "STEP_2_TEXT": "Opeta tietokone tunnistamaan ne esimerkkien avulla",
-        "STEP_3_TEXT": "Tee Scratchissa peli, joka hyödyntää tietokoneen oppimaa tunnistamista"
+        "STEP_3_TEXT": "Tee Scratchissa peli, joka hyödyntää tietokoneen oppimaa tunnistamista",
+        "SESSION_LIMIT": "No account needed. Your projects last for {{ duration }} after you click \"Get started\", and then they're deleted. To keep a project, save it to a file from your Projects page."
     },
     "LOGIN": {
         "TITLE": "Aloita koneoppiminen",
@@ -202,7 +203,8 @@
             "NOTES_1": "Minne haluat tallentaa tämän projektin?",
             "NOTES_2": "Selaimeen tallennettaessa projektin koolle ei ole pilvitallennuksen rajoituksia.",
             "NOTES_3": "Pilveen tallennettuun projektiin pääset miltä tahansa tietokoneelta.",
-            "PROMPT": "Valitse, minne haluat tallentaa projektin"
+            "PROMPT": "Valitse, minne haluat tallentaa projektin",
+            "BROWSER_UNSUPPORTED": "Your web browser can't store projects. Please try a different web browser."
         },
         "TYPES": {
             "TYPELABEL": "Projektin tyyppi",

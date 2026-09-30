@@ -69,7 +69,8 @@
         "PROJECT_LABEL": "<strong>프로젝트</strong>로 이동",
         "STEP_1_TEXT": "먼저 여러 데이터를 모아보세요",
         "STEP_2_TEXT": "데이터를 사용하여 인공지능을 훈련시켜보세요",
-        "STEP_3_TEXT": "인공지능을 사용하여 스크래치 게임을 만들어보세요"
+        "STEP_3_TEXT": "인공지능을 사용하여 스크래치 게임을 만들어보세요",
+        "SESSION_LIMIT": "No account needed. Your projects last for {{ duration }} after you click \"Get started\", and then they're deleted. To keep a project, save it to a file from your Projects page."
     },
     "LOGIN": {
         "TITLE": "머신러닝을 시작해봅시다",
@@ -202,7 +203,8 @@
             "NOTES_1": "Where do you want to store this project?",
             "NOTES_2": "Storing in your web browser removes limits on how big your project can be.",
             "NOTES_3": "Storing in the cloud will let you access the project from any computer.",
-            "PROMPT": "Please choose where you would like to store your project"
+            "PROMPT": "Please choose where you would like to store your project",
+            "BROWSER_UNSUPPORTED": "Your web browser can't store projects. Please try a different web browser."
         },
         "TYPES": {
             "TYPELABEL": "Project Type",

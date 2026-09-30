@@ -63,7 +63,8 @@
         "PROJECT_LABEL": "Перейти на <strong>Проекты</strong>",
         "STEP_1_TEXT": "Соберите примеры предметов, которые вы хотите распознать",
         "STEP_2_TEXT": "Используйте эти примеры, чтобы научить компьютер распознавать их",
-        "STEP_3_TEXT": "Создайте игру в Scratch, которая использует возможности компьютера распознавать предметы"
+        "STEP_3_TEXT": "Создайте игру в Scratch, которая использует возможности компьютера распознавать предметы",
+        "SESSION_LIMIT": "No account needed. Your projects last for {{ duration }} after you click \"Get started\", and then they're deleted. To keep a project, save it to a file from your Projects page."
     },
     "LOGIN": {
         "TITLE": "Начать с машинного обучения",
@@ -196,7 +197,8 @@
             "NOTES_1": "Где будем хранить проект?",
             "NOTES_2": "Хранение в веб браузере не имеет ограничения на размер проекта.",
             "NOTES_3": "Сохранение в облаке позволяет получать доступ с любого другого компьютера.",
-            "PROMPT": "Выберете место хранения проекта"
+            "PROMPT": "Выберете место хранения проекта",
+            "BROWSER_UNSUPPORTED": "Your web browser can't store projects. Please try a different web browser."
         },
         "TYPES": {
             "TYPELABEL": "Тип проекта",

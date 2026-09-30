@@ -63,7 +63,8 @@
         "PROJECT_LABEL": "برو به <strong>پروژه‌ها</strong>",
         "STEP_1_TEXT": "نمونه‌هایی از چیزهایی را که می خواهید تشخیص دهید جمع آوری کنید",
         "STEP_2_TEXT": "از مثال‌ها برای آموزش رایانه‌ استفاده کنید تا بتواند آنها را تشخیص دهد",
-        "STEP_3_TEXT": "یک بازی در اسکرچ بسازید که از توانایی رایانه برای تشخیص آنها استفاده کند"
+        "STEP_3_TEXT": "یک بازی در اسکرچ بسازید که از توانایی رایانه برای تشخیص آنها استفاده کند",
+        "SESSION_LIMIT": "No account needed. Your projects last for {{ duration }} after you click \"Get started\", and then they're deleted. To keep a project, save it to a file from your Projects page."
     },
     "LOGIN": {
         "TITLE": "یادگیری ماشین را شروع کنید",
@@ -196,7 +197,8 @@
             "NOTES_1": "Where do you want to store this project?",
             "NOTES_2": "Storing in your web browser removes limits on how big your project can be.",
             "NOTES_3": "Storing in the cloud will let you access the project from any computer.",
-            "PROMPT": "Please choose where you would like to store your project"
+            "PROMPT": "Please choose where you would like to store your project",
+            "BROWSER_UNSUPPORTED": "Your web browser can't store projects. Please try a different web browser."
         },
         "TYPES": {
             "TYPELABEL": "Project Type",

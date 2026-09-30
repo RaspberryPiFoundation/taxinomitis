@@ -69,7 +69,8 @@
     "PROJECT_LABEL": "Перейти до ваших <strong>Проектів</strong>",
     "STEP_1_TEXT": "Зберіть приклади речей, які ви хочете впізнати",
     "STEP_2_TEXT": "Використовуйте приклади, щоб навчити комп'ютер їх розпізнавати",
-    "STEP_3_TEXT": "Створіть гру в Scratch, яка використовує здатність комп’ютера їх розпізнавати"
+    "STEP_3_TEXT": "Створіть гру в Scratch, яка використовує здатність комп’ютера їх розпізнавати",
+    "SESSION_LIMIT": "No account needed. Your projects last for {{ duration }} after you click \"Get started\", and then they're deleted. To keep a project, save it to a file from your Projects page."
   },
   "LOGIN": {
     "TITLE": "Початок роботи з машинним навчанням",
@@ -202,7 +203,8 @@
       "NOTES_1": "Where do you want to store this project?",
       "NOTES_2": "Storing in your web browser removes limits on how big your project can be.",
       "NOTES_3": "Storing in the cloud will let you access the project from any computer.",
-      "PROMPT": "Оберіть, де ви хочете зберігати свій проєкт"
+      "PROMPT": "Оберіть, де ви хочете зберігати свій проєкт",
+      "BROWSER_UNSUPPORTED": "Your web browser can't store projects. Please try a different web browser."
     },
     "TYPES": {
       "TYPELABEL": "Тип проєкту",

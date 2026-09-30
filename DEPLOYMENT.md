@@ -154,7 +154,7 @@ Don't set `DEPLOYMENT` as a config var, it belongs in `heroku.yml` as a build ar
 
 ### Scheduled cleanup job
 
-Each "Try it now" session creates a temporary user that expires after 4 hours. Expired users stay in the database until a cleanup job deletes them. The site allows at most 3,500 temporary users, and expired ones count towards that limit. Without the cleanup job, "Try it now" will eventually fail for everyone with "There are too many students trying the site".
+Each "Try it now" session creates a temporary user that expires after 4 hours. This is set by `SESSION_LIFESPAN` in [`mlforkids-api/src/lib/sessionusers/index.ts`](./mlforkids-api/src/lib/sessionusers/index.ts), and the welcome page tells users how long they have based on it. Expired users stay in the database until a cleanup job deletes them. The site allows at most 3,500 temporary users, and expired ones count towards that limit. Without the cleanup job, "Try it now" will eventually fail for everyone with "There are too many students trying the site".
 
 Run the job every hour with [Heroku Scheduler](https://devcenter.heroku.com/articles/scheduler):
 

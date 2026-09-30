@@ -63,7 +63,8 @@
         "PROJECT_LABEL": "<strong>ව්‍යාපෘති </strong> වෙත යන්න",
         "STEP_1_TEXT": "ඔබට හඳුනාගැනීමට අවශ්‍ය දේවල් වලට උදාහරණ එකතු කරන්න",
         "STEP_2_TEXT": "ඒ උදාහරණ භාවිතයෙන් පරිගණකයට ඒවා හඳුනාගන්න පුරුදු කරන්න",
-        "STEP_3_TEXT": "ඒවා හඳුනාගැනීමට පරිගණකයට ඇති හැකියාව පාවිච්චි කර Scratch වල ක්‍රීඩාවක් හදන්න"
+        "STEP_3_TEXT": "ඒවා හඳුනාගැනීමට පරිගණකයට ඇති හැකියාව පාවිච්චි කර Scratch වල ක්‍රීඩාවක් හදන්න",
+        "SESSION_LIMIT": "No account needed. Your projects last for {{ duration }} after you click \"Get started\", and then they're deleted. To keep a project, save it to a file from your Projects page."
     },
     "LOGIN": {
         "TITLE": "Machine learning වෙත පිවිසෙමු",
@@ -196,7 +197,8 @@
             "NOTES_1": "Where do you want to store this project?",
             "NOTES_2": "Storing in your web browser removes limits on how big your project can be.",
             "NOTES_3": "Storing in the cloud will let you access the project from any computer.",
-            "PROMPT": "Please choose where you would like to store your project"
+            "PROMPT": "Please choose where you would like to store your project",
+            "BROWSER_UNSUPPORTED": "Your web browser can't store projects. Please try a different web browser."
         },
         "TYPES": {
             "TYPELABEL": "Project Type",

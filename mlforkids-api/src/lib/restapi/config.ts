@@ -7,6 +7,7 @@ import * as compression from 'compression';
 import * as constants from '../utils/constants';
 import * as env from '../utils/env';
 import * as deployment from '../utils/deployment';
+import * as sessionusers from '../sessionusers';
 
 export const CSP_DIRECTIVES: Record<string, string[]> = {
     defaultSrc: ["'self'",
@@ -227,7 +228,10 @@ export function setupUI(app: express.Application): void {
     const injectedIndexHtml = buildIndexHtmlWithRuntimeConfig(path.join(indexHtml, 'index.html'));
     if (injectedIndexHtml) {
         const serveInjectedIndex = (req: express.Request, res: express.Response) => {
-            res.set('Content-Type', 'text/html').send(injectedIndexHtml);
+            res.set('Content-Type', 'text/html')
+               // same caching as the static index.html below
+               .set('Cache-Control', 'public, max-age=' + (constants.ONE_HOUR / 1000))
+               .send(injectedIndexHtml);
         };
         app.get('/', compression(), serveInjectedIndex);
         app.get('/index.html', compression(), serveInjectedIndex);
@@ -239,8 +243,9 @@ export function setupUI(app: express.Application): void {
 
 /**
  * Reads the built index.html and injects a script that exposes the current
- *  runtime config values (feature flags and the Turnstile site key) as
- *  globals (read by the front-end during Angular bootstrap). Returns
+ *  runtime config values (feature flags, the Turnstile site key and the
+ *  "Try it now" session length) as globals (read by the front-end during
+ *  Angular bootstrap). Returns
  *  undefined if the file cannot be read or the expected injection point is
  *  missing, so the caller falls back to serving the static file unmodified
  */
@@ -254,6 +259,9 @@ function buildIndexHtmlWithRuntimeConfig(indexHtmlFile: string): string | undefi
     }
 
     let runtimeConfig = 'window.ACCOUNTS_ENABLED = ' + env.accountsEnabled() + ';';
+
+    // length of a "Try it now" session in milliseconds, so the welcome page can tell users how long they have
+    runtimeConfig += 'window.TRY_IT_NOW_SESSION_LIFESPAN = ' + sessionusers.SESSION_LIFESPAN + ';';
 
     // Cloudflare Turnstile (captcha) key needed to start "Try it now" sessions - front-end builds for deployments other than machinelearningforkids.co.uk don't include one
     const turnstileSiteKey = env.getTurnstileSiteKey();

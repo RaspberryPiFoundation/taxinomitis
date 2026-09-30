@@ -32,6 +32,10 @@
                     ng-if="isAuthenticated"
                     ui-sref="projects"
                     class="btn btn-primary" translate>WELCOME.PROJECT_LABEL</button>
+                <!-- without accounts, "Get started" begins a time-limited "Try it now" session -->
+                <p class="text-muted sessionlimit"
+                   ng-if="!accountsEnabled && !isAuthenticated && !inMaintenanceMode && vm.sessionLength"
+                   translate="WELCOME.SESSION_LIMIT" translate-values="{ duration: vm.sessionLength }"></p>
                 <!-- captcha for "Try it now" sessions when accounts are disabled -->
                 <div id="welcome-turnstile-container"></div>
             </div>
