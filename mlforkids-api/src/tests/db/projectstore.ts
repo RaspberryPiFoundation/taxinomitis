@@ -1,4 +1,4 @@
-/*eslint-env mocha */
+import { describe, it, before, after } from 'node:test';
 import * as assert from 'assert';
 import { v1 as uuid } from 'uuid';
 import * as randomstring from 'randomstring';
@@ -7,7 +7,7 @@ import * as store from '../../lib/db/store';
 import * as Objects from '../../lib/db/db-types';
 
 
-const TESTCLASS = 'UNIQUECLASSID';
+const TESTCLASS = 'UNIQUECLASSIDPROJ';
 
 
 describe('DB store', () => {
@@ -262,16 +262,12 @@ describe('DB store', () => {
 
     describe('storeProject', () => {
 
-        it.skip('should recognise SQL errors about unsupported characters', () => {
-            return store.storeProject('USERID', 'CLASSID', 'text',
-                                      'ğooğle', 'en', [], false)
-                        .then(() => {
-                            assert.fail('Should not have stored a project with this name');
-                        })
-                        .catch((err) => {
-                            assert.strictEqual(err.message,
-                                'Sorry, some of those letters can\'t be used in project names');
-                        });
+        it.skip('should recognise SQL errors about unsupported characters', async () => {
+            await assert.rejects(
+                () => store.storeProject('USERID', 'CLASSID', 'text',
+                                      'ğooğle', 'en', [], false),
+                { message: 'Sorry, some of those letters can\'t be used in project names' }
+            );
         });
 
         it('should return an empty list for unknown users', async () => {
@@ -345,12 +341,10 @@ describe('DB store', () => {
             return store.deleteProjectsByClassId(CLASSID);
         });
 
-        function getNumProjects(userid: string, classid: string): Promise<number> {
-            return store.getProjectsByUserId(userid, classid)
-                .then((projects) => {
-                    assert(Array.isArray(projects));
-                    return projects.length;
-                });
+        async function getNumProjects(userid: string, classid: string): Promise<number> {
+            const projects = await store.getProjectsByUserId(userid, classid);
+            assert(Array.isArray(projects));
+            return projects.length;
         }
 
         interface ProjsCount {
@@ -416,17 +410,91 @@ describe('DB store', () => {
     });
 
 
+    describe('getProjectsOwnedByUserId', () => {
+
+        // The only query that returns cloud projects AND the localprojects
+        //  cloud-reference rows together, and the only one scoped strictly to
+        //  what a user OWNS. Anything that needs "everything belonging to this
+        //  user" - exporting, or deleting an account - wants this rather than
+        //  getProjectsByUserId, which also returns other people's
+        //  crowd-sourced projects.
+
+        const CLASSID = uuid();
+
+        after(() => {
+            return store.deleteProjectsByClassId(CLASSID);
+        });
+
+        it('should return an empty list for a user with nothing', async () => {
+            const owned = await store.getProjectsOwnedByUserId(uuid(), CLASSID);
+            assert.deepStrictEqual(owned, []);
+        });
+
+        it('should return cloud projects and local project references together', async () => {
+            const userid = uuid();
+
+            const cloudProject = await store.storeProject(userid, CLASSID, 'text', 'cloud one', 'en', [], false);
+            const localProject = await store.storeLocalProject(userid, CLASSID, 'text', 'local one', [ 'alpha' ]);
+
+            const owned = await store.getProjectsOwnedByUserId(userid, CLASSID);
+
+            assert.strictEqual(owned.length, 2);
+
+            const ids = owned.map((project) => project.id).sort();
+            assert.deepStrictEqual(ids, [ cloudProject.id, localProject.id ].sort());
+
+            await store.deleteEntireProject(userid, CLASSID, localProject);
+        });
+
+        it('should not return projects belonging to somebody else', async () => {
+            const userid = uuid();
+            const otherid = uuid();
+
+            await store.storeProject(userid, CLASSID, 'text', 'mine', 'en', [], false);
+            await store.storeProject(otherid, CLASSID, 'text', 'theirs', 'en', [], false);
+
+            const owned = await store.getProjectsOwnedByUserId(userid, CLASSID);
+
+            assert.strictEqual(owned.length, 1);
+            assert.strictEqual(owned[0].name, 'mine');
+        });
+
+        it('should NOT include crowd-sourced projects owned by other users', async () => {
+            // the difference from getProjectsByUserId, which does include them
+            const userid = uuid();
+            const teacherid = uuid();
+
+            await store.storeProject(teacherid, CLASSID, 'text', 'shared with the class', 'en', [], true);
+
+            const owned = await store.getProjectsOwnedByUserId(userid, CLASSID);
+            assert.deepStrictEqual(owned, []);
+
+            // ...whereas the access-based query does return it
+            const accessible = await store.getProjectsByUserId(userid, CLASSID);
+            assert.strictEqual(accessible.some((project) => project.name === 'shared with the class'), true);
+        });
+
+        it('should not return projects from another class', async () => {
+            const userid = uuid();
+            const otherclass = uuid();
+
+            await store.storeProject(userid, otherclass, 'text', 'elsewhere', 'en', [], false);
+
+            const owned = await store.getProjectsOwnedByUserId(userid, CLASSID);
+            assert.deepStrictEqual(owned, []);
+
+            await store.deleteProjectsByClassId(otherclass);
+        });
+    });
+
+
     describe('addLabelToProject', () => {
 
-        it('should handle non-existent projects', (done) => {
-            store.addLabelToProject(uuid(), TESTCLASS, 'text', 'MYNEWLABEL')
-                .then(() => {
-                    assert.fail('should not have let this happen');
-                })
-                .catch((err) => {
-                    assert.strictEqual(err.message, 'Project not found');
-                    done();
-                });
+        it('should handle non-existent projects', async () => {
+            await assert.rejects(
+                () => store.addLabelToProject(uuid(), TESTCLASS, 'text', 'MYNEWLABEL'),
+                { message: 'Project not found' }
+            );
         });
 
         it('should ignore (case-insensitive) duplicate labels', async () => {
@@ -545,15 +613,11 @@ describe('DB store', () => {
         }
 
 
-        it('should handle non-existent projects', (done) => {
-            store.removeLabelFromProject(uuid(), TESTCLASS, 'text', 'MYOLDLABEL')
-                .then(() => {
-                    assert.fail('should not have let this happen');
-                })
-                .catch((err) => {
-                    assert.strictEqual(err.message, 'Project not found');
-                    done();
-                });
+        it('should handle non-existent projects', async () => {
+            await assert.rejects(
+                () => store.removeLabelFromProject(uuid(), TESTCLASS, 'text', 'MYOLDLABEL'),
+                { message: 'Project not found' }
+            );
         });
 
         it('should remove a label from a text project', async () => {
@@ -638,14 +702,11 @@ describe('DB store', () => {
 
     describe('updateProjectCrowdSourced', () => {
 
-        it('should handle updates to known projects', () => {
-            return store.updateProjectCrowdSourced(uuid(), uuid(), uuid(), false)
-                .then(() => {
-                    assert.fail('should have reported an error');
-                })
-                .catch((err) => {
-                    assert.strictEqual(err.message, 'Project not found');
-                });
+        it('should handle updates to known projects', async () => {
+            await assert.rejects(
+                () => store.updateProjectCrowdSourced(uuid(), uuid(), uuid(), false),
+                { message: 'Project not found' }
+            );
         });
     });
 

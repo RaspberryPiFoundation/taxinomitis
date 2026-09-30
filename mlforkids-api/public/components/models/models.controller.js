@@ -8,21 +8,23 @@
         'authService',
         'projectsService', 'trainingService', 'quizService',
         'soundTrainingService', 'imageTrainingService', 'regressionTrainingService', 'numberTrainingService',
-        'modelService', 'utilService', 'storageService', 'downloadService',
+        'modelService', 'utilService', 'storageService', 'downloadService', 'browserStorageService',
         'imageToolsService', 'webcamsService', 'gpuDetectionService',
-        '$stateParams',
+        'scrollService', 'loggerService',
+        '$stateParams', '$location',
         '$scope',
-        '$mdDialog', '$timeout', '$interval', '$q', '$document', '$state', 'loggerService'
+        '$mdDialog', '$timeout', '$interval', '$q', '$state'
     ];
 
     function ModelsController(authService,
         projectsService, trainingService, quizService,
         soundTrainingService, imageTrainingService, regressionTrainingService, numberTrainingService,
-        modelService, utilService, storageService, downloadService,
+        modelService, utilService, storageService, downloadService, browserStorageService,
         imageToolsService, webcamsService, gpuDetectionService,
-        $stateParams,
+        scrollService, loggerService,
+        $stateParams, $location,
         $scope,
-        $mdDialog, $timeout, $interval, $q, $document, $state, loggerService)
+        $mdDialog, $timeout, $interval, $q, $state)
     {
 
         var vm = this;
@@ -214,13 +216,13 @@
                 else if ($scope.project.type === 'sounds') {
                     return setupSoundsProject()
                         .then(function () {
-                            $scope.constrainedDevice = gpuDetectionService.isConstrained();
+                            $scope.constrainedDevice = $location.search().simplified || gpuDetectionService.isConstrained();
                         });
                 }
                 else if ($scope.project.type === 'imgtfjs') {
                     return setupImagesProject()
                         .then(function () {
-                            $scope.constrainedDevice = gpuDetectionService.isConstrained();
+                            $scope.constrainedDevice = $location.search().simplified || gpuDetectionService.isConstrained();
                         });
                 }
                 else if ($scope.project.type === 'regression') {
@@ -236,7 +238,7 @@
             })
             .catch(function (err) {
                 var errId = displayAlert('errors', err.status, err.data ? err.data : err);
-                scrollToNewItem('errors' + errId);
+                scrollService.scrollToNewItem('errors' + errId);
             });
 
 
@@ -270,6 +272,7 @@
                         return utilService.loadImageProjectSupport();
                     });
             }
+            return $q.resolve();
         }
         function setupSoundsProject () {
             $scope.listening = false;
@@ -383,7 +386,11 @@
             else {
                 modelFnPromise = trainingService.getModels($scope.project, $scope.userId, vm.profile.tenant);
             }
-            return modelFnPromise.then(function (models) {
+            // some type-specific services (browser/IndexedDB-backed local
+            //  training) resolve with native Promises rather than $q ones,
+            //  which wouldn't trigger a digest on their own - $q.when()
+            //  normalises either into a proper $q promise
+            return $q.when(modelFnPromise).then(function (models) {
                 loggerService.debug('[ml4kmodels] models info', models);
 
                 $scope.models = models;
@@ -399,7 +406,14 @@
                         vm.errors = vm.errors.filter(function (e) { return e.message !== 'Unknown error'; });
 
                         var errId = displayAlert('errors', models[0].error, models[0].error);
-                        scrollToNewItem('errors' + errId);
+
+                        if (createModelFailedDueToDownloadFail(models[0].error)) {
+                            // training error that is because of bad training data
+                            allowUserToDeleteTrainingItemThatCausedTrainingFail(models[0].error);
+                        }
+                        else {
+                            scrollService.scrollToNewItem('errors' + errId);
+                        }
 
                         if (models[0].error.resourceLimitError) {
                             $scope.constrainedDevice = true;
@@ -441,6 +455,10 @@
             $scope.submittingTrainingRequest = true;
             clearTestOutput();
 
+            if (project.storage === 'local') {
+                browserStorageService.requestPersistentStorage();
+            }
+
             var modelFnPromise;
             if ($scope.project.type === 'imgtfjs') {
                 modelFnPromise = imageTrainingService.newModel(project.id, $scope.userId, vm.profile.tenant, simplified);
@@ -458,7 +476,8 @@
                 modelFnPromise = regressionTrainingService.newModel(project);
             }
 
-            modelFnPromise.then(function (newmodel) {
+            // see the comment on the equivalent wrap in fetchModels() above
+            $q.when(modelFnPromise).then(function (newmodel) {
                     loggerService.debug('[ml4kmodels] model training', newmodel);
 
                     $scope.models = [ newmodel ];
@@ -484,7 +503,7 @@
                     else {
                         // general training error
                         var errId = displayAlert('errors', err.status, err.data);
-                        scrollToNewItem('errors' + errId);
+                        scrollService.scrollToNewItem('errors' + errId);
                     }
                 });
         };
@@ -540,7 +559,7 @@
                             })
                             .catch(function (e) {
                                 var errId = displayAlert('errors', e.status, e.data);
-                                scrollToNewItem('errors' + errId);
+                                scrollService.scrollToNewItem('errors' + errId);
                             });
                     }
                 },
@@ -574,7 +593,7 @@
                     var errId = displayAlert('errors', 400, {
                         message : 'Invalid URL. Please enter the web address for a picture that you want to test your machine learning model on'
                     });
-                    return scrollToNewItem('errors' + errId);
+                    return scrollService.scrollToNewItem('errors' + errId);
                 }
 
                 try {
@@ -646,7 +665,8 @@
                     testdata);
             }
 
-            testFnPromise
+            // see the comment on the equivalent wrap in fetchModels() above
+            $q.when(testFnPromise)
                 .then(displayTestResult)
                 .catch(displayTestError);
         };
@@ -681,16 +701,15 @@
                 modelFnPromise = trainingService.deleteModel(project, $scope.userId, vm.profile.tenant, classifierid);
             }
 
-            modelFnPromise.then(function () {
+            // see the comment on the equivalent wrap in fetchModels() above -
+            //  this is what actually keeps the UI in sync after a delete now
+            //  that there's no longer a follow-up poll to paper over it
+            $q.when(modelFnPromise).then(function () {
                     $scope.models = [];
                     $scope.status = modelService.getStatus($scope.models);
 
-                    if ($scope.status === 'training' || project.type === 'numbers' || project.type === 'imgtfjs' || project.type === 'sounds' || project.type === 'regression') {
-                        refreshModels();
-                    }
-                    else {
-                        stopRefreshing();
-                    }
+                    // nothing left to poll for immediately after a delete
+                    stopRefreshing();
 
                     $scope.submittingDeleteRequest = false;
                 })
@@ -703,7 +722,7 @@
                     }
 
                     var errId = displayAlert('errors', err.status, err.data);
-                    scrollToNewItem('errors' + errId);
+                    scrollService.scrollToNewItem('errors' + errId);
                 });
         };
 
@@ -911,7 +930,7 @@
             delete $scope.testoutput;
 
             var errId = displayAlert('errors', err.status, err.data);
-            scrollToNewItem('errors' + errId);
+            scrollService.scrollToNewItem('errors' + errId);
         }
 
 
@@ -924,6 +943,13 @@
                     $scope.$applyAsync(() => {
                         $scope.testoutput = resp[0].class_name;
                         $scope.testoutput_explanation = "with " + Math.round(resp[0].confidence) + "% confidence";
+                    });
+                })
+                .catch(function (err) {
+                    loggerService.error('[ml4kmodels] failed to start listening', err);
+                    $scope.$applyAsync(function () {
+                        $scope.listening = false;
+                        displayTestError(err);
                     });
                 });
             }
@@ -1001,34 +1027,6 @@
                 }
             }
         });
-
-
-        function scrollToNewItem(itemId) {
-            $timeout(function () {
-                var newItem = document.getElementById(itemId);
-                $document.duScrollToElementAnimated(angular.element(newItem));
-            }, 0);
-        }
-
-
-        function scrollToNewItem(itemId, retried) {
-            $scope.$applyAsync(() => {
-                var newItem = document.getElementById(itemId.toString());
-                if (newItem) {
-                    var itemContainer = newItem.parentElement;
-                    angular.element(itemContainer).duScrollToElementAnimated(angular.element(newItem));
-                }
-                else if (!retried) {
-                    $timeout(function () {
-                        scrollToNewItem(itemId, true);
-                    }, 0);
-                }
-                else {
-                    loggerService.error('[ml4kmodels] unable to scroll to new item', itemId);
-                }
-            });
-        }
-
 
 
         $scope.getController = function() {

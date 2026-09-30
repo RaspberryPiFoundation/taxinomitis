@@ -14,25 +14,51 @@
 
         var logs = [];
 
+        function safeStringify(obj) {
+            try {
+                return JSON.stringify(obj);
+            }
+            catch (err) {
+                return 'Unable to stringify object';
+            }
+        }
+
         function capture() {
             for (var i = 0; i < arguments.length; i++) {
                 var nextarg = arguments[i];
                 if (nextarg instanceof Error) {
-                    nextarg = JSON.stringify({
+                    nextarg = safeStringify({
                         name: nextarg.name,
                         message: nextarg.message,
                         stack: nextarg.stack
                     });
                 }
                 else if (nextarg && nextarg.reason && nextarg.reason.name && nextarg.reason.message) {
-                    nextarg = JSON.stringify({
+                    nextarg = safeStringify({
                         name: nextarg.reason.name,
                         message: nextarg.reason.message,
                         stack: nextarg.reason.stack
                     });
                 }
+                else if (nextarg instanceof ErrorEvent) {
+                    nextarg = safeStringify({
+                        evt: 'ErrorEvent',
+                        message: nextarg.message,
+                        filename: nextarg.filename,
+                        lineno: nextarg.lineno,
+                        colno: nextarg.colno
+                    });
+                }
+                else if (nextarg instanceof Event) {
+                    var target = nextarg.target;
+                    nextarg = safeStringify({
+                        evt: 'Event',
+                        type: nextarg.type,
+                        src: target && (target.src || target.href || target.nodeName)
+                    });
+                }
                 else if (typeof nextarg !== 'string') {
-                    nextarg = JSON.stringify(nextarg);
+                    nextarg = safeStringify(nextarg);
                 }
                 logs.push(Date.now() + ' ' + nextarg + '\n');
             }
@@ -45,7 +71,7 @@
             logs.push(JSON.stringify(urlParms));
             logs.push('\n[ml4klog] browser ');
             logs.push(navigator.userAgent);
-            logs.push('\n[ml4klog] version v=315');
+            logs.push('\n[ml4klog] version v=360');
 
             downloadService.downloadFile(logs, 'text/plain', 'mlforkids.log');
         }

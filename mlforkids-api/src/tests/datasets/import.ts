@@ -1,7 +1,7 @@
-/*eslint-env mocha */
+import { describe, it, before, after } from 'node:test';
 import * as assert from 'assert';
 import * as sinon from 'sinon';
-import { v1 as uuid } from 'uuid';
+import { randomUUID } from 'node:crypto';
 import * as store from '../../lib/db/store';
 import * as datasets from '../../lib/datasets';
 import * as dbtypes from '../../lib/db/db-types';
@@ -10,7 +10,7 @@ import * as dbtypes from '../../lib/db/db-types';
 
 describe('Datasets import', () => {
 
-    const TESTCLASS = 'UNIQUECLASSID';
+    const TESTCLASS = 'UNIQUECLASSIDDS';
 
     let fetchStub: sinon.SinonStub<any, any>;
 
@@ -47,25 +47,19 @@ describe('Datasets import', () => {
 
     describe('Errors', () => {
 
-        it('should handle requests to import non-existent datasets', () => {
-            return datasets.importDataset(uuid(), TESTCLASS, DEFAULT_IMPORT, 'text', 'not-a-real-dataset')
-                .then(() => {
-                    assert.fail('should not get here');
-                })
-                .catch((err) => {
-                    assert.strictEqual(err.message, datasets.ERRORS.DATASET_DOES_NOT_EXIST);
-                });
+        it('should handle requests to import non-existent datasets', async () => {
+            await assert.rejects(
+                () => datasets.importDataset(randomUUID(), TESTCLASS, DEFAULT_IMPORT, 'text', 'not-a-real-dataset'),
+                { message: datasets.ERRORS.DATASET_DOES_NOT_EXIST }
+            );
         });
 
-        it('should handle requests to import non-existent dataset types', () => {
-            return datasets.importDataset(uuid(), TESTCLASS, DEFAULT_IMPORT,
-                                          '../../../' as dbtypes.ProjectTypeLabel, 'not-a-real-dataset')
-                .then(() => {
-                    assert.fail('should not get here');
-                })
-                .catch((err) => {
-                    assert.strictEqual(err.message, datasets.ERRORS.DATASET_DOES_NOT_EXIST);
-                });
+        it('should handle requests to import non-existent dataset types', async () => {
+            await assert.rejects(
+                () => datasets.importDataset(randomUUID(), TESTCLASS, DEFAULT_IMPORT,
+                                          '../../../' as dbtypes.ProjectTypeLabel, 'not-a-real-dataset'),
+                { message: datasets.ERRORS.DATASET_DOES_NOT_EXIST }
+            );
         });
 
     });
@@ -73,7 +67,7 @@ describe('Datasets import', () => {
 
     describe('Verify datasets', () => {
         it('should be able to import all prod datasets', async () => {
-            const user = uuid();
+            const user = randomUUID();
 
             const prodDatasets: {[type: string]: string[]; } = {
                 numbers : [
@@ -109,7 +103,7 @@ describe('Datasets import', () => {
     describe('Text datasets', () => {
 
         it('should import a text dataset', async () => {
-            const user = uuid();
+            const user = randomUUID();
 
             const project = await datasets.importDataset(user, TESTCLASS, DEFAULT_IMPORT, 'text', 'test-only-txt');
 
@@ -117,28 +111,24 @@ describe('Datasets import', () => {
             await store.deleteEntireProject(user, TESTCLASS, project);
         });
 
-        function verifyTestTextProject(projectid: string) {
-            return store.getProject(projectid)
-                .then((project) => {
-                    assert(project);
-                    if (project) {
-                        assert.strictEqual(project.name, 'Test project');
-                        assert.deepStrictEqual(project.labels, [ 'compliment', 'insult' ]);
-                        assert.strictEqual(project.language, 'en');
-                    }
+        async function verifyTestTextProject(projectid: string) {
+            const project = await store.getProject(projectid);
+            assert(project);
+            if (project) {
+                assert.strictEqual(project.name, 'Test project');
+                assert.deepStrictEqual(project.labels, [ 'compliment', 'insult' ]);
+                assert.strictEqual(project.language, 'en');
+            }
 
-                    return store.getTextTraining(projectid, { start: 0, limit : 10 });
-                })
-                .then((verify) => {
-                    assert.strictEqual(verify.length, 7);
-                    assert(confirmItemPresent(verify, 'You are lovely', 'compliment'));
-                    assert(confirmItemPresent(verify, 'I like you', 'compliment'));
-                    assert(confirmItemPresent(verify, 'We think you are a good person', 'compliment'));
-                    assert(confirmItemPresent(verify, 'You suck', 'insult'));
-                    assert(confirmItemPresent(verify, 'Everyone hatest you', 'insult'));
-                    assert(confirmItemPresent(verify, 'You smell bad', 'insult'));
-                    assert(confirmItemPresent(verify, 'You are an idiot', 'insult'));
-                });
+            const verify = await store.getTextTraining(projectid, { start: 0, limit : 10 });
+            assert.strictEqual(verify.length, 7);
+            assert(confirmItemPresent(verify, 'You are lovely', 'compliment'));
+            assert(confirmItemPresent(verify, 'I like you', 'compliment'));
+            assert(confirmItemPresent(verify, 'We think you are a good person', 'compliment'));
+            assert(confirmItemPresent(verify, 'You suck', 'insult'));
+            assert(confirmItemPresent(verify, 'Everyone hatest you', 'insult'));
+            assert(confirmItemPresent(verify, 'You smell bad', 'insult'));
+            assert(confirmItemPresent(verify, 'You are an idiot', 'insult'));
         }
 
         function confirmItemPresent(list: any[], textdata: string, label: string) {
@@ -153,7 +143,7 @@ describe('Datasets import', () => {
     describe('Numbers datasets', () => {
 
         it('should import a numbers dataset', async () => {
-            const user = uuid();
+            const user = randomUUID();
 
             const project = await datasets.importDataset(user, TESTCLASS, DEFAULT_IMPORT, 'numbers', 'test-only-num');
 
@@ -161,34 +151,30 @@ describe('Datasets import', () => {
             await store.deleteEntireProject(user, TESTCLASS, project);
         });
 
-        function verifyTestNumbersProject(projectid: string) {
-            return store.getProject(projectid)
-                .then((project) => {
-                    assert(project);
-                    if (project) {
-                        assert.strictEqual(project.name, 'My project');
-                        assert.deepStrictEqual(project.labels, [ 'first', 'second', 'third' ]);
-                    }
+        async function verifyTestNumbersProject(projectid: string) {
+            const project = await store.getProject(projectid);
+            assert(project);
+            if (project) {
+                assert.strictEqual(project.name, 'My project');
+                assert.deepStrictEqual(project.labels, [ 'first', 'second', 'third' ]);
+            }
 
-                    return store.getNumberTraining(projectid, { start: 0, limit : 10 });
-                })
-                .then((verify) => {
-                    assert.strictEqual(verify.length, 7);
-                    assert.deepStrictEqual(verify[0].numberdata, [ 10, 0, 15, 0 ]);
-                    assert.strictEqual(verify[0].label, 'first');
-                    assert.deepStrictEqual(verify[1].numberdata, [ 11, 1, 14, 2 ]);
-                    assert.strictEqual(verify[1].label, 'first');
-                    assert.deepStrictEqual(verify[2].numberdata, [ 12, 0, 13, 1 ]);
-                    assert.strictEqual(verify[2].label, 'first');
-                    assert.deepStrictEqual(verify[3].numberdata, [ 13, 1, 12, 1 ]);
-                    assert.strictEqual(verify[3].label, 'first');
-                    assert.deepStrictEqual(verify[4].numberdata, [ 0, 1, 1, 2 ]);
-                    assert.strictEqual(verify[4].label, 'second');
-                    assert.deepStrictEqual(verify[5].numberdata, [ 5.8, 0, 18.1, 2 ]);
-                    assert.strictEqual(verify[5].label, 'third');
-                    assert.deepStrictEqual(verify[6].numberdata, [ -102, 1, -1, 1 ]);
-                    assert.strictEqual(verify[6].label, 'third');
-                });
+            const verify = await store.getNumberTraining(projectid, { start: 0, limit : 10 });
+            assert.strictEqual(verify.length, 7);
+            assert.deepStrictEqual(verify[0].numberdata, [ 10, 0, 15, 0 ]);
+            assert.strictEqual(verify[0].label, 'first');
+            assert.deepStrictEqual(verify[1].numberdata, [ 11, 1, 14, 2 ]);
+            assert.strictEqual(verify[1].label, 'first');
+            assert.deepStrictEqual(verify[2].numberdata, [ 12, 0, 13, 1 ]);
+            assert.strictEqual(verify[2].label, 'first');
+            assert.deepStrictEqual(verify[3].numberdata, [ 13, 1, 12, 1 ]);
+            assert.strictEqual(verify[3].label, 'first');
+            assert.deepStrictEqual(verify[4].numberdata, [ 0, 1, 1, 2 ]);
+            assert.strictEqual(verify[4].label, 'second');
+            assert.deepStrictEqual(verify[5].numberdata, [ 5.8, 0, 18.1, 2 ]);
+            assert.strictEqual(verify[5].label, 'third');
+            assert.deepStrictEqual(verify[6].numberdata, [ -102, 1, -1, 1 ]);
+            assert.strictEqual(verify[6].label, 'third');
         }
     });
 
@@ -196,7 +182,7 @@ describe('Datasets import', () => {
     describe('Images datasets', () => {
 
         it('should import an images dataset', async () => {
-            const user = uuid();
+            const user = randomUUID();
 
             const project = await datasets.importDataset(user, TESTCLASS, DEFAULT_IMPORT, 'imgtfjs', 'test-only-img');
 
@@ -204,37 +190,25 @@ describe('Datasets import', () => {
             await store.deleteEntireProject(user, TESTCLASS, project);
         });
 
-        function verifyTestImagesProject(projectid: string) {
-            return store.getProject(projectid)
-                .then((project) => {
-                    assert(project);
-                    if (project) {
-                        assert.strictEqual(project.name, 'Pictures project');
-                        assert.deepStrictEqual(project.labels, [ 'cat', 'dog' ]);
-                    }
-                    return store.getImageTraining(projectid, { start: 0, limit : 10 });
-                })
-                .then((verify) => {
+        async function verifyTestImagesProject(projectid: string) {
+            const project = await store.getProject(projectid);
+            assert(project);
+            if (project) {
+                assert.strictEqual(project.name, 'Pictures project');
+                assert.deepStrictEqual(project.labels, [ 'cat', 'dog' ]);
+            }
+
+            const verify = await store.getImageTraining(projectid, { start: 0, limit : 10 });
                     assert.strictEqual(verify.length, 9);
-                    // tslint:disable-next-line:max-line-length
-                    assert(confirmItemPresent(verify, 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Gillie_hunting_%282292639848%29.jpg/867px-Gillie_hunting_%282292639848%29.jpg', 'cat'));
-                    // tslint:disable-next-line:max-line-length
-                    assert(confirmItemPresent(verify, 'https://upload.wikimedia.org/wikipedia/commons/4/4c/Blackcat-Lilith.jpg', 'cat'));
-                    // tslint:disable-next-line:max-line-length
-                    assert(confirmItemPresent(verify, 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Britishblue.jpg/744px-Britishblue.jpg', 'cat'));
-                    // tslint:disable-next-line:max-line-length
-                    assert(confirmItemPresent(verify, 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Brown_and_white_tabby_cat_with_green_eyes-Hisashi-03.jpg/1599px-Brown_and_white_tabby_cat_with_green_eyes-Hisashi-03.jpg', 'cat'));
-                    // tslint:disable-next-line:max-line-length
-                    assert(confirmItemPresent(verify, 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Orange_tabby_cat_sitting_on_fallen_leaves-Hisashi-01A.jpg/900px-Orange_tabby_cat_sitting_on_fallen_leaves-Hisashi-01A.jpg', 'cat'));
-                    // tslint:disable-next-line:max-line-length
-                    assert(confirmItemPresent(verify, 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Racib%C3%B3rz_2007_082.jpg/1599px-Racib%C3%B3rz_2007_082.jpg', 'dog'));
-                    // tslint:disable-next-line:max-line-length
-                    assert(confirmItemPresent(verify, 'https://upload.wikimedia.org/wikipedia/commons/4/47/Golden_retriever.jpg', 'dog'));
-                    // tslint:disable-next-line:max-line-length
-                    assert(confirmItemPresent(verify, 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Deutscher_Schaeferhund_Presley_von_Beluga.jpg/1600px-Deutscher_Schaeferhund_Presley_von_Beluga.jpg', 'dog'));
-                    // tslint:disable-next-line:max-line-length
-                    assert(confirmItemPresent(verify, 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Brittany_Spaniel_standing.jpg/1583px-Brittany_Spaniel_standing.jpg', 'dog'));
-                });
+                    assert(confirmItemPresent(verify, 'https://i.allthepics.net/2026/03/08/217540f7ff8d.jpeg', 'cat'));
+                    assert(confirmItemPresent(verify, 'https://i.allthepics.net/2026/03/08/2b6e745533cb.jpeg', 'cat'));
+                    assert(confirmItemPresent(verify, 'https://i.allthepics.net/2026/03/08/ad060b2eda5d.jpeg', 'cat'));
+                    assert(confirmItemPresent(verify, 'https://i.allthepics.net/2026/03/08/c8175c27db70.jpeg', 'cat'));
+                    assert(confirmItemPresent(verify, 'https://i.allthepics.net/2026/03/08/ae40c5dbd5d0.jpeg', 'cat'));
+                    assert(confirmItemPresent(verify, 'https://i.allthepics.net/2026/03/08/834e22c84d81.jpeg', 'dog'));
+                    assert(confirmItemPresent(verify, 'https://i.allthepics.net/2026/03/08/812ed8b00e9b.jpeg', 'dog'));
+                    assert(confirmItemPresent(verify, 'https://i.allthepics.net/2026/03/08/f75d4b1d8eb3.jpeg', 'dog'));
+                    assert(confirmItemPresent(verify, 'https://i.allthepics.net/2026/03/08/24a85e5c67b0.jpeg', 'dog'));
         }
 
         function confirmItemPresent(list: any[], imageurl: string, label: string) {
@@ -258,7 +232,7 @@ describe('Datasets import', () => {
             ];
             const expectedtotal = 278;
 
-            const user = uuid();
+            const user = randomUUID();
 
             for (const test of TESTS) {
                 const project = await datasets.importDataset(user, TESTCLASS, { crowdsourced: false, testratio: test.ratio }, 'text', 'uk-newspaper-headlines');
@@ -289,7 +263,7 @@ describe('Datasets import', () => {
             ];
             const expectedtotal = 40;
 
-            const user = uuid();
+            const user = randomUUID();
 
             for (const test of TESTS) {
                 const project = await datasets.importDataset(user, TESTCLASS, { crowdsourced: false, testratio: test.ratio }, 'imgtfjs', 'cats-and-dogs');
@@ -320,7 +294,7 @@ describe('Datasets import', () => {
             ];
             const expectedtotal = 334;
 
-            const user = uuid();
+            const user = randomUUID();
 
             for (const test of TESTS) {
                 const project = await datasets.importDataset(user, TESTCLASS, { crowdsourced: false, testratio: test.ratio }, 'numbers', 'pokemon-stats');
@@ -342,7 +316,7 @@ describe('Datasets import', () => {
         });
 
         it('should return string labels for multi-choice test values', async () => {
-            const user = uuid();
+            const user = randomUUID();
 
             const project = await datasets.importDataset(user, TESTCLASS, { crowdsourced: false, testratio: 90 }, 'numbers', 'test-only-num');
             assert(project.testdata);
@@ -362,7 +336,7 @@ describe('Datasets import', () => {
         });
 
         it('should not overlap test and train data', async () => {
-            const user = uuid();
+            const user = randomUUID();
 
             const project = await datasets.importDataset(user, TESTCLASS, { crowdsourced: false, testratio: 33 }, 'imgtfjs', 'test-only-img');
             const trainingdata = await store.getImageTraining(project.id, { limit: 1000, start: 0 });

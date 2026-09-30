@@ -88,6 +88,22 @@
         "TRY_TITLE": "Experimenta sem registo",
         "TRY_NOW": "Experimenta agora",
         "TRY_NOW_EXPLANATION": "Usa todos os recursos do site sem precisar de registar ou iniciar sessão. Os projetos de Machine learning que forem criados com \"Experimenta agora\" vão ser excluídos após (pelo menos) quatro horas.",
+        "TURNSTILE_ERROR": "We weren't able to verify that you're a real person, not a robot (error {{ code }}).",
+        "TURNSTILE_ERROR_MORE": "more...",
+        "TURNSTILE_ERROR_DIALOG_TITLE": "Why did this happen?",
+        "TURNSTILE_ERROR_DIALOG_INTRO": "Before letting you use \"Try it now\", I use a free service called <a href='https://www.cloudflare.com/products/turnstile/'>Cloudflare Turnstile</a> to check that you're a real person, and not a computer program pretending to be lots of different users. Usually this check happens automatically, without you needing to do anything.",
+        "TURNSTILE_ERROR_DIALOG_WHY": "Sometimes this check fails, and it isn't usually anything you've done wrong. It's often caused by one of these things:",
+        "TURNSTILE_ERROR_DIALOG_REASON_1": "A privacy or ad-blocking browser extension is stopping the check from running",
+        "TURNSTILE_ERROR_DIALOG_REASON_2": "Your browser is blocking content from other websites (some privacy settings or \"strict\" cookie modes do this, even though the rest of the page works fine)",
+        "TURNSTILE_ERROR_DIALOG_REASON_3": "You're using a VPN, or a shared school network with strict security settings",
+        "TURNSTILE_ERROR_DIALOG_REASON_4": "The date and time set on your computer are wrong",
+        "TURNSTILE_ERROR_DIALOG_REASON_5": "A temporary problem with your internet connection",
+        "TURNSTILE_ERROR_DIALOG_TRY": "Things you could try:",
+        "TURNSTILE_ERROR_DIALOG_TIP_1": "Turn off any ad-blocker or privacy extension for this website, or try a different browser",
+        "TURNSTILE_ERROR_DIALOG_TIP_2": "Try a different network (for example, turn off a VPN) - or if you're on a school network, ask whoever manages it to allow challenges.cloudflare.com",
+        "TURNSTILE_ERROR_DIALOG_TIP_3": "Check that the date and time on your computer are set correctly",
+        "TURNSTILE_ERROR_DIALOG_TIP_4": "Wait a few minutes and try again",
+        "TURNSTILE_ERROR_DIALOG_ALTERNATIVE": "If you already have an account, logging in doesn't need this check.",
         "WHO_YOU": "Quem és tu?",
         "TEACHER": "Um encarregado de educação, professor/a ou líder de um clube de programação",
         "STUDENT": "Um estudante",
@@ -137,7 +153,36 @@
         "CLOUD_STORAGE_TITLE": "Projeto na nuvem",
         "CLOUD_STORAGE_NOTES": "Os teus dados de treino para este projeto estão armazenados na nuvem. Este projeto pode ser aberto a partir de qualquer computador.",
         "LOCAL_STORAGE_TITLE": "Projeto local",
-        "LOCAL_STORAGE_NOTES": "Os dados de treino para este projeto estão armazenados no teu computador. Este projeto só pode ser aberto a partir deste navegador web."
+        "LOCAL_STORAGE_NOTES": "Os dados de treino para este projeto estão armazenados no teu computador. Este projeto só pode ser aberto a partir deste navegador web.",
+        "CLONE_SUBTITLE": "Copy project to this computer",
+        "CLONE_BUTTON": "Copy",
+        "CLONE_EXPLANATION": "You can make a copy of this project that will be stored in this web browser.",
+        "CLONE_INPROGRESS": "Copying...",
+        "CLONE_PROGRESS_COUNT": "Copied {{copied}} of {{total}} training items",
+        "CLONE_DONE": "Your project has been copied.",
+        "CLONE_SKIPPED": "{{skipped}} of your training examples could not be copied, so they have been left out.",
+        "CLONE_TESTDATA": "Your test data was copied too.",
+        "CLONE_FAILED": "Sorry, your project could not be copied.",
+        "CLONE_CLOSE": "Close",
+        "IMPORTPROJECT": "Import from file",
+        "EXPORT_SUBTITLE": "Save project to a file",
+        "EXPORT_BUTTON": "Save",
+        "EXPORT_EXPLANATION": "You can keep this as a backup, or share it with a friend so they can open it too.",
+        "EXPORT_INPROGRESS": "Saving...",
+        "EXPORT_PROGRESS_COUNT": "Saved {{copied}} of {{total}} training items",
+        "EXPORT_DONE": "Saved as <strong>{{filename}}</strong>. Look for it where your browser puts downloaded files.",
+        "EXPORT_SKIPPED": "{{skipped}} of your training examples could not be saved, so they have been left out.",
+        "EXPORT_FAILED": "Sorry, your project could not be saved.",
+        "IMPORT_TITLE": "Import a project from a file",
+        "IMPORT_INTRO_1": "If you have saved a project to a file, you can import it here to add it back to your list of projects. You can import a project file that you saved yourself, or one somebody has shared with you.",
+        "IMPORT_INTRO_2": "The imported project will be stored in this web browser, on this computer.",
+        "IMPORT_DROP": "Drag your project file here",
+        "IMPORT_CHOOSE": "Choose a file",
+        "IMPORT_INPROGRESS": "Opening {{filename}}...",
+        "IMPORT_PROGRESS_COUNT": "Copied {{copied}} of {{total}} training items",
+        "IMPORT_DONE": "Your project has been added to your projects.",
+        "IMPORT_SKIPPED": "{{imported}} training examples were copied, but {{skipped}} could not be, so they have been left out.",
+        "IMPORT_CONTINUE": "Go to my projects"
     },
     "NEWPROJECT": {
         "TITLE": "Começa um novo projeto de machine learning",
@@ -778,9 +823,9 @@
     "DESCRIBEIMAGEMODEL": {
         "WHATISEPOCH": "\"Época\" é uma descrição de uma etapa do treino. A época 0 foi o início do treino. O número final da época depende da quantidade de dados de treino que tens.",
 
-        "LINESGODOWN": "Se a <strong>linha cair</strong>, isso é bom. O teu modelo está a aprender e a melhorar no reconhecimento de imagens.",
-        "LINESFLAT": "Se a <strong>linha permanecer plana</strong>, o teu modelo não está a melhorar e já aprendeu tudo o que podia. Se o modelo ainda não estiver bom o suficiente, vais precisar de mais imagens de treino para que ele aprenda mais.",
-        "LINEGOESUP": "Se a <strong>linha subir</strong>, o teu modelo está a cometer mais erros à medida que aprende, o que significa que pode estar com dificuldades para aprender. Tenta adicionar imagens de treino mais diversificadas."
+        "LINESGODOWN": "Se a <strong>linha descer</strong>, isso é bom. O teu modelo está a aprender e a melhorar no reconhecimento de coisas.",
+        "LINESFLAT": "Se a linha <strong>permanecer constante</strong>, o teu modelo não está a melhorar e já aprendeu tudo o que podia. Se o modelo ainda não estiver bom o suficiente, vais precisar de mais exemplos de treino para que ele aprenda mais.",
+        "LINEGOESUP": "Se a <strong>linha subir</strong>, o teu modelo está a cometer mais erros à medida que aprende, o que significa que pode estar com dificuldades para aprender. Tenta adicionar exemplos de treino diferentes."
     },
     "DESCRIBETEXTMODEL": {
         "ZOOM": "Usa estes controlos para ampliar os diagramas",
@@ -973,6 +1018,22 @@
             "DESCRIPTION": "Texto adicional incluído na primeira prompt, para fornecer conhecimentos adicionais que estão em falta no modelo."
         },
 
+        "TOOLS": {
+            "TITLE": "Tools",
+            "UNSUPPORTED": "This model does not support using tools.",
+            "ENABLE": "Enable",
+            "DISABLE": "Disable",
+            "DESCRIPTION_1": "Some models can use 'tools' to get information not already in their knowledge.",
+            "DESCRIPTION_2": "Three simple tools are provided here to try.",
+            "DESCRIPTION_3": "Normally language models decide for themselves when to use tools. For this example, when you enable tools, the model will always use a tool to respond to your prompt.",
+            "DESCRIPTION_4": "Disable it when you want it to use its own knowledge.",
+            "ENABLED": "The model will use a tool to respond to the next prompt.",
+            "DISABLED": "The model will <strong>not</strong> use tools to respond to the next prompt.",
+            "TRY": "try this tool",
+            "RUNNING": "running tool",
+            "OUTPUT": "tool output"
+        },
+
         "CONTEXTWINDOW": {
             "TITLE": "Tamanho da janela de contexto",
             "DESCRIPTION": "A quantidade de texto que o modelo analisa antes de gerar a próxima palavra. Uma janela menor significa que ele trabalha com menos texto anterior. Uma janela maior permite que ele use mais, o que pode tornar as respostas mais precisas, mas requer mais memória do computador."
@@ -1036,6 +1097,21 @@
                 "NOTFOUND": "As palavras no final da tua prompt não foram encontradas em nenhum lugar do teu corpus."
             },
             "SCRATCH": "Usa o teu modelo de linguagem no Scratch"
+        },
+        "MANAGE": {
+            "TITLE": "Small language models management",
+            "INTRO_DOWNLOAD": "Use this page to prepare for a language model lesson by downloading models in advance.",
+            "INTRO_BROWSER": "Changes made on this page affect all users who use this web browser.",
+            "DOWNLOAD": "download size",
+            "CURRENTSTORAGE": "current storage",
+            "UNSUPPORTED": "Unsupported on this browser / device",
+            "CHECKINGCACHE": "Checking cache...",
+            "DOWNLOAD_BUTTON": "Download",
+            "DOWNLOAD_ALL": "Download All",
+            "DOWNLOADING": "Downloading",
+            "DELETE_BUTTON": "Delete",
+            "DELETING": "Deleting...",
+            "TOTAL": "Total"
         }
     },
     "MAKES": {
@@ -1929,7 +2005,7 @@
             "PROJECT_LIMITS": {
                 "TITLE": "Limites para projetos na nuvem criados pelos teus alunos",
                 "NUM_PROJECTS": "Cada um dos teus alunos pode ter até <span class='mlprojecttype'>{{ num }}</span> projetos na nuvem.",
-                "TRAINING_DATA": "Cada projeto de nuvem <span class='mlprojecttype'>{{ tipo }}</span> pode ter até <span class='mlprojecttype'>{{ num }}</span> exemplos de dados de treino."
+                "TRAINING_DATA": "Cada projeto de nuvem <span class='mlprojecttype'>{{ type }}</span> pode ter até <span class='mlprojecttype'>{{ num }}</span> exemplos de dados de treino."
             },
             "EXPIRY": {
                 "TITLE": "Para ajudar-te a evitar os limites para o número de modelos de machine learning:",
@@ -2073,7 +2149,7 @@
             "MANAGED": "Contas de turma com gestão",
             "MANAGEDEXPL": "Para professores, líderes de grupos de programação ou outros voluntários",
             "UNMANAGED": "Contas de turma sem gestão",
-            "UNMANAGEDEXPL": "Para funcionários da IBM, professores e líderes de grupos de programação que fazem a gestão das contas das suas próprias turmas"
+            "UNMANAGEDEXPL": "Para funcionários da IBM ou utilizadores que façam a gestão das contas das suas próprias turmas"
         },
         "FAQS": {
             "TITLE": "Queres saber mais?",

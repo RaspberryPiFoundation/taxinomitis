@@ -355,6 +355,11 @@ export function createTextTraining(projectid: string, data: string, label: strin
     }
 
     const object: any = {
+        // UUID v1 - timestamp-based unique ID
+        //  training items are fetched sorted by ID - so this
+        //  means items are retrieved in creation order
+        // Don't change UUID type without updating how collections
+        //  are retrieved
         id : uuid(),
         projectid,
         textdata : data.replace(INVALID_TEXT_CHARS, ' '),
@@ -412,6 +417,11 @@ export function createNumberTraining(projectid: string, data: number[], label: s
     }
 
     const object: any = {
+        // UUID v1 - timestamp-based unique ID
+        //  training items are fetched sorted by ID - so this
+        //  means items are retrieved in creation order
+        // Don't change UUID type without updating how collections
+        //  are retrieved
         id : uuid(),
         projectid,
         numberdata : data,
@@ -461,6 +471,11 @@ export function createImageTraining(
     }
 
     const object: any = {
+        // UUID v1 - timestamp-based unique ID
+        //  training items are fetched sorted by ID - so this
+        //  means items are retrieved in creation order
+        // Don't change UUID type without updating how collections
+        //  are retrieved
         id : imageid ? imageid : uuid(),
         projectid,
         imageurl,
@@ -1081,6 +1096,31 @@ export function setClassTenantExpiries(
 
     tenant.textClassifierExpiry = textexpiry;
     return tenant;
+}
+
+
+export function setClassTenantMaxUsers(
+    tenant: Objects.ClassTenant,
+    maxusers: number,
+): Objects.ClassTenant
+{
+    if (!tenant) {
+        throw new Error('Missing tenant info to update');
+    }
+    if (!maxusers) {
+        throw new Error('Missing required max users value');
+    }
+    if (!Number.isInteger(maxusers)) {
+        throw new Error('Max users values should be an integer');
+    }
+    if (maxusers < 1) {
+        throw new Error('Max users values should be a positive number');
+    }
+    if (maxusers > 399) {
+        throw new Error('Max users values should not be greater than 399');
+    }
+
+    return { ...tenant, maxUsers : maxusers };
 }
 
 

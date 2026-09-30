@@ -30,11 +30,13 @@ if (DEPLOYMENT === 'machinelearningforkids.co.uk') {
     if (isForProd) {
         additionalVariables = [
             path.join(baseDir, 'public', 'prod-sentry.js'),
-            path.join(baseDir, 'public', 'auth0-prod-variables.js')
+            path.join(baseDir, 'public', 'auth0-prod-variables.js'),
+            path.join(baseDir, 'public', 'cloudflare-prod-variables.js'),
         ];
     } else {
         additionalVariables = [
-            path.join(baseDir, 'public', 'auth0-variables.js')
+            path.join(baseDir, 'public', 'auth0-variables.js'),
+            path.join(baseDir, 'public', 'cloudflare-dev-variables.js'),
         ];
     }
 } else {
@@ -60,7 +62,7 @@ function findJsFiles(dir) {
         const fullPath = path.join(dir, entry.name);
         if (entry.isDirectory()) {
             files.push(...findJsFiles(fullPath));
-        } else if (entry.name.endsWith('.js')) {
+        } else if (entry.name.endsWith('.js') && !entry.name.endsWith('.spec.js')) {
             files.push(fullPath);
         }
     }

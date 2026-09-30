@@ -432,6 +432,7 @@ export async function deleteProjectsByClassId(classid: string): Promise<void>
         await dbExecute(queryName, queryString, queryValues);
     }
     catch (err) {
+        log.error({ err }, 'Failed to delete projects');
         throw new Error('Failed to delete projects');
     }
 }
@@ -637,6 +638,7 @@ export async function deleteTraining(
         await dbExecute(queryName, queryString, queryValues);
     }
     catch (err) {
+        log.error({ err }, 'Failed to delete training');
         throw new Error('Failed to delete training');
     }
 }
@@ -657,6 +659,7 @@ async function deleteTrainingLabel(
         await dbExecute(queryName, queryString, queryValues);
     }
     catch (err) {
+        log.error({ err }, 'Failed to delete label');
         throw new Error('Failed to delete label');
     }
 }
@@ -674,6 +677,7 @@ export async function deleteTrainingByProjectId(type: Objects.ProjectTypeLabel, 
         await dbExecute(queryName, queryString, queryValues);
     }
     catch (err) {
+        log.error({ err }, 'Failed to delete training');
         throw new Error('Failed to delete training');
     }
 }
@@ -1330,6 +1334,21 @@ export async function getBluemixCredentials(
     return response.rows.map(dbobjects.getCredentialsFromDbRow);
 }
 
+export async function getBluemixCredentialsByClassId(
+    classid: string, service: TrainingObjects.BluemixServiceType,
+): Promise<TrainingObjects.BluemixCredentials[]>
+{
+    const queryName = 'dbqn-select-bluemixcredentials-classid-safe';
+    const queryString = 'SELECT id, classid, servicetype, url, username, password, credstypeid ' +
+                        'FROM bluemixcredentials ' +
+                        'WHERE classid = $1 AND servicetype = $2';
+    const queryValues = [ classid, service ];
+
+    const response = await dbExecute(queryName, queryString, queryValues);
+    return response.rows.map(dbobjects.getCredentialsFromDbRow);
+}
+
+
 export async function getBluemixCredentialsPoolBatch(
     service: TrainingObjects.BluemixServiceType,
 ): Promise<TrainingObjects.BluemixCredentials[]>
@@ -1575,6 +1594,7 @@ export async function deleteBluemixCredentials(credentialsid: string): Promise<v
         await dbExecute(queryName, queryString, queryValues);
     }
     catch (err) {
+        log.error({ err }, 'Failed to delete credentials info');
         throw new Error('Failed to delete credentials info');
     }
 }
@@ -1589,6 +1609,7 @@ export async function deleteBluemixCredentialsPool(credentialsid: string): Promi
         await dbExecute(queryName, queryString, queryValues);
     }
     catch (err) {
+        log.error({ err }, 'Failed to delete credentials info');
         throw new Error('Failed to delete credentials info');
     }
 }
@@ -1611,6 +1632,26 @@ export function deleteBluemixCredentialsPoolForTests(): Promise<void> {
 }
 
 
+/**
+ * The classifier rows that would be deleted by deleteClassifiersByCredentials -
+ *  so that the deletion can be reversed if needed.
+ */
+export async function getClassifiersUsingCredentials(
+    credentials: TrainingObjects.BluemixCredentials,
+): Promise<TrainingObjects.ClassifierDbRow[]>
+{
+    const queryName = 'dbqn-select-bluemixclassifiers-bycredentials';
+    const queryString = 'SELECT id, credentialsid, userid, projectid, classid, servicetype, ' +
+                            'classifierid, url, name, language, created, expiry ' +
+                        'FROM bluemixclassifiers ' +
+                        'WHERE credentialsid = $1';
+    const queryValues = [ credentials.id ];
+
+    const response = await dbExecute(queryName, queryString, queryValues);
+    return response.rows;
+}
+
+
 export async function deleteClassifiersByCredentials(credentials: TrainingObjects.BluemixCredentials): Promise<void>
 {
     const queryName = 'dbqn-delete-bluemixclassifiers-credsid';
@@ -1621,6 +1662,7 @@ export async function deleteClassifiersByCredentials(credentials: TrainingObject
         await dbExecute(queryName, queryString, queryValues);
     }
     catch (err) {
+        log.error({ err }, 'Failed to delete classifiers info');
         throw new Error('Failed to delete classifiers info');
     }
 }
@@ -1757,6 +1799,7 @@ export async function storeNumbersClassifier(
         await dbExecute(queryName, queryString, queryValues);
     }
     catch (err) {
+        log.error({ err }, 'Failed to store classifier');
         throw new Error('Failed to store classifier');
     }
 
@@ -1778,6 +1821,7 @@ export async function deleteNumberClassifier(
         await dbExecute(queryName, queryString, queryValues);
     }
     catch (err) {
+        log.error({ err }, 'Failed to delete classifiers info');
         throw new Error('Failed to delete classifiers info');
     }
 }
@@ -1825,6 +1869,7 @@ export async function deleteConversationWorkspace(id: string): Promise<void>
         await dbExecute(queryName, queryString, queryValues);
     }
     catch (err) {
+        log.error({ err }, 'Failed to delete classifiers info');
         throw new Error('Failed to delete classifiers info');
     }
 }
@@ -1840,6 +1885,7 @@ export async function deleteConversationWorkspacesByProjectId(projectid: string)
         await dbExecute(queryName, queryString, queryValues);
     }
     catch (err) {
+        log.error({ err }, 'Failed to delete classifiers info');
         throw new Error('Failed to delete classifiers info');
     }
 }
@@ -1950,6 +1996,28 @@ export function resetExpiredScratchKey(id: string, projecttype: Objects.ProjectT
 
     return dbExecute(queryName, queryString, queryValues)
         .then(() => { return; });
+}
+
+
+/**
+ * The scratch key rows that would be reset by removeCredentialsFromScratchKeys,
+ *  with their current (pre-reset) field values - so that the reset can be
+ *  reversed if needed.
+ */
+export async function getScratchKeysUsingCredentials(
+    credentials: TrainingObjects.BluemixCredentials,
+): Promise<Objects.ScratchKeyDbRow[]>
+{
+    const queryName = 'dbqn-select-scratchkeys-bycredentials';
+    const queryString = 'SELECT id, classid, projectid, projectname, projecttype, ' +
+                            'serviceurl, serviceusername, servicepassword, ' +
+                            'classifierid, updated ' +
+                        'FROM scratchkeys ' +
+                        'WHERE serviceusername = $1 AND servicepassword = $2 AND classid = $3';
+    const queryValues = [ credentials.username, credentials.password, credentials.classid ];
+
+    const response = await dbExecute(queryName, queryString, queryValues);
+    return response.rows;
 }
 
 
@@ -2161,6 +2229,7 @@ export async function deleteScratchKey(id: string): Promise<void>
         await dbExecute(queryName, queryString, queryValues);
     }
     catch (err) {
+        log.error({ err }, 'Failed to delete scratch key info');
         throw new Error('Failed to delete scratch key info');
     }
 }
@@ -2176,6 +2245,7 @@ export async function deleteScratchKeysByProjectId(projectid: string): Promise<v
         await dbExecute(queryName, queryString, queryValues);
     }
     catch (err) {
+        log.error({ err }, 'Failed to delete scratch key info');
         throw new Error('Failed to delete scratch key info');
     }
 }
@@ -2298,7 +2368,7 @@ export async function deletePendingJob(job: Objects.PendingJob): Promise<void>
         await dbExecute(queryName, queryString, queryValues);
     }
     catch (err) {
-        log.error({ job, queryValues }, 'Failed to delete pending job');
+        log.error({ err, job, queryValues }, 'Failed to delete pending job');
         throw new Error('Failed to delete pending job');
     }
 }
@@ -2369,6 +2439,41 @@ export async function storeManagedClassTenant(classid: string, numstudents: numb
         textClassifierExpiry : obj.textclassifiersexpiry,
     };
     return created;
+}
+
+
+export async function updateManagedClassTenant(classid: string, numstudents: number, maxprojects: number, type: Objects.ClassTenantType): Promise<Objects.ClassTenant>
+{
+    const obj = dbobjects.createClassTenant(classid, [ 'text', 'numbers', 'sounds', 'imgtfjs' ]);
+    const NUM_USERS = numstudents + 1;
+
+    const queryName = 'dbqn-update-tenants';
+    const queryString = 'UPDATE tenants SET ' +
+                            'projecttypes = $2, ismanaged = $3, ' +
+                            'maxusers = $4, maxprojectsperuser = $5, ' +
+                            'textclassifiersexpiry = $6 ' +
+                        'WHERE id = $1';
+    const queryValues = [
+        obj.id, obj.projecttypes,
+        type, NUM_USERS,
+        maxprojects,
+        obj.textclassifiersexpiry,
+    ];
+
+    const response = await dbExecute(queryName, queryString, queryValues);
+    if (response.rowCount !== 1) {
+        log.error({ response, queryValues }, 'Failed to update managed tenant');
+        throw new Error('Failed to update managed tenant');
+    }
+    const updated = {
+        id : obj.id,
+        supportedProjectTypes : obj.projecttypes.split(',') as Objects.ProjectTypeLabel[],
+        tenantType : type,
+        maxUsers : NUM_USERS,
+        maxProjectsPerUser : maxprojects,
+        textClassifierExpiry : obj.textclassifiersexpiry,
+    };
+    return updated;
 }
 
 
@@ -2456,6 +2561,45 @@ export async function modifyClassTenantExpiries(
 }
 
 
+export async function modifyClassTenantMaxUsers(
+    classid: string,
+    maxusers: number,
+): Promise<Objects.ClassTenant>
+{
+    const tenantinfo = await getClassTenant(classid);
+
+    const modified = dbobjects.setClassTenantMaxUsers(tenantinfo, maxusers);
+    const obj = dbobjects.getClassDbRow(modified);
+
+    const queryName = 'dbqn-insert-tenants-maxusers';
+    const queryString = 'INSERT INTO tenants ' +
+                            '(id, projecttypes, ' +
+                                'maxusers, maxprojectsperuser, ' +
+                                'textclassifiersexpiry, ' +
+                                'ismanaged) ' +
+                            'VALUES ($1, $2, $3, $4, $5, $6) ' +
+                            'ON CONFLICT(id) DO UPDATE SET ' +
+                                'maxusers = $7';
+    const queryValues = [
+        obj.id, obj.projecttypes,
+        obj.maxusers, obj.maxprojectsperuser,
+        obj.textclassifiersexpiry,
+        obj.ismanaged,
+        //
+        obj.maxusers,
+    ];
+
+    const response = await dbExecute(queryName, queryString, queryValues);
+    if (response.rowCount !== 1)
+    {
+        log.error({ response, queryValues }, 'Failed to update tenant info');
+        throw new Error('Failed to update tenant info');
+    }
+
+    return modified;
+}
+
+
 export async function deleteClassTenant(classid: string): Promise<void>
 {
     const queryName = 'dbqn-delete-tenants-id';
@@ -2466,6 +2610,7 @@ export async function deleteClassTenant(classid: string): Promise<void>
         await dbExecute(queryName, queryString, queryValues);
     }
     catch (err) {
+        log.error({ err }, 'Failed to delete class tenant');
         throw new Error('Failed to delete class tenant');
     }
 }
@@ -2543,6 +2688,7 @@ export async function deleteTemporaryUser(user: Objects.TemporaryUser): Promise<
         await dbExecute(queryName, queryString, queryValues);
     }
     catch (err) {
+        log.error({ err }, 'Failed to delete temporary user');
         throw new Error('Failed to delete temporary user');
     }
 }

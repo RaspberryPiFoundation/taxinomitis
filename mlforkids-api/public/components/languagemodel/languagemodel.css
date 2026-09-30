@@ -179,6 +179,11 @@
     margin-bottom: 0.2em;
 }
 
+.languagemodelpage .modelstep .stepexplanation.notools {
+    color: #707070;
+    font-style: italic;
+}
+
 .languagemodelpage .modelstep .stepcontrols {
     margin-bottom: 1em;
 }
@@ -261,6 +266,20 @@
     margin-bottom: 15px;
 }
 
+.languagemodelpage .generatedtext .toolmessage {
+    margin-bottom: 15px;
+    padding: 0.25em 0.75em;
+    border-left: 3px solid #999;
+    color: #666;
+    font-size: 0.9em;
+}
+
+.languagemodelpage .generatedtext .toolmessage .toolmessagename,
+.languagemodelpage .generatedtext .toolmessage .toolmessageargs,
+.languagemodelpage .generatedtext .toolmessage .toolmessageoutput {
+    font-weight: bold;
+}
+
 .languagemodelpage .generatedtext .generatedtoken {
     cursor: pointer;
 }
@@ -308,4 +327,252 @@
     .languagemodelpage .mlchart {
         flex: 3; height: 270px;
     }
+}
+
+.languagemodelpage .model-type-buttons {
+    margin: 1em 0;
+}
+
+.languagemodelpage .model-name-label {
+    color: #00008b;
+    margin-left: 1em;
+}
+
+.languagemodelpage .wikipedia-icon {
+    font-family: serif;
+    font-size: 2em;
+}
+
+.languagemodelpage .context-image {
+    max-width: 150px;
+}
+
+.languagemodelpage .context-change-button {
+    margin-top: 1em;
+}
+
+.languagemodelpage .context-explanation {
+    flex: 3;
+}
+
+.languagemodelpage .token-display-container {
+    min-height: 320px;
+    max-height: 340px;
+    height: unset;
+}
+
+.languagemodelpage .token-items-scrollable {
+    max-height: 267px;
+    height: unset;
+    overflow-y: scroll;
+    padding-top: 0;
+}
+
+.languagemodelpage .token-table {
+    padding-top: 0;
+}
+
+.languagemodelpage .token-cell {
+    width: calc(23vw - 20px);
+}
+
+.languagemodelpage .token-tooltip-wide {
+    max-width: 380px;
+}
+
+.languagemodelpage .slider-labels {
+    margin-bottom: 1em;
+    display: flex;
+    flex-direction: row;
+    padding: 0 1em;
+    font-size: 0.9em;
+    color: #2e6da4;
+}
+
+.languagemodelpage .slider-label-left {
+    flex: 1;
+    text-align: left;
+}
+
+.languagemodelpage .slider-label-right {
+    flex: 1;
+    text-align: right;
+}
+
+.languagemodelpage .topp-controls {
+    padding-left: 2em;
+    padding-right: 0.5em;
+}
+
+.languagemodelpage .probability-display-container {
+    min-height: 410px;
+    max-height: 430px;
+    height: unset;
+}
+
+.languagemodelpage .probability-items-scrollable {
+    max-height: 357px;
+    height: unset;
+    overflow-y: scroll;
+    padding-top: 0;
+}
+
+.languagemodelpage .probability-result {
+    text-align: right;
+}
+
+.languagemodelpage .download-progress {
+    width: 80%;
+}
+
+.languagemodelpage .chart-container {
+    padding: 1em;
+}
+
+.languagemodelpage .chart-explanation {
+    flex: 1;
+    padding: 1em;
+}
+
+.languagemodelpage .chart-title {
+    font-weight: bold;
+}
+
+.languagemodelpage .chart-container-top {
+    padding: 1em 1em 0 1em;
+}
+
+.languagemodelpage .context-controls {
+    padding-left: 0.5em;
+    padding-right: 2em;
+}
+
+.languagemodelpage .context-buttons {
+    background-color: white;
+    margin: 1em;
+    padding: 1em;
+}
+
+.languagemodelpage .file-upload-hidden {
+    display: none !important;
+}
+
+.languagemodelpage .testing-container {
+    margin-top: 2em;
+}
+
+.languagemodelpage .tools-controls {
+    padding-left: 0.5em;
+    padding-right: 2em;
+    flex: initial;
+    max-width: 22em;
+}
+
+.languagemodelpage .tools-controls .stepexplanation:first-of-type {
+    margin-top: 1em;
+}
+
+.languagemodelpage .toolslist {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 1em;
+}
+
+.languagemodelpage .toolslist .tooldefinition {
+    flex: 1;
+    min-width: 15em;
+    max-width: 25em;
+    padding: 1em;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+}
+
+.languagemodelpage .toolslist.toolsdisabled .tooldefinition {
+    opacity: 0.4;
+    filter: grayscale(1);
+}
+
+.languagemodelpage .tooldefinition .tooltitle {
+    font-family: monospace;
+    font-weight: bold;
+    margin-bottom: 0.5em;
+}
+
+.languagemodelpage .tooldefinition .toolparameters {
+    margin-top: 0.5em;
+}
+
+.languagemodelpage .tooldefinition .toolparameter {
+    margin-top: 0.5em;
+}
+
+.languagemodelpage .tooldefinition .toolparametername {
+    font-family: monospace;
+}
+
+.languagemodelpage .tooldefinition .toolparameterdescription {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.languagemodelpage .tooldefinition .toolparameterinput {
+    width: 100%;
+    padding: 0.25em 0.5em;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-top: 0.25em;
+}
+
+.languagemodelpage .tooldefinition .tooltest {
+    margin-top: auto;
+    padding-top: 1em;
+}
+
+.languagemodelpage .tooldefinition .tooltestoutput {
+    margin-top: 0.5em;
+    padding: 0.5em;
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: monospace;
+    overflow-wrap: break-word;
+}
+
+.languagemodelpage .testing-input-row {
+    display: flex;
+    flex-direction: row;
+    margin-bottom: 8px;
+}
+
+.languagemodelpage .testing-input {
+    flex: 3;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+.languagemodelpage .token-no-margin {
+    margin-left: 0;
+}
+
+.languagemodelpage .token-highlighted {
+    background-color: black;
+    color: white;
+    margin-left: 1em;
+}
+
+.languagemodelpage .dialog-content-padded {
+    padding: 1em;
+}
+
+.languagemodelpage .wikipedia-textarea {
+    padding: 0.5em;
+    border: thin #c0c0c0 solid;
+}
+
+.languagemodelpage .hover-explanation-content {
+    margin-bottom: 15px;
 }

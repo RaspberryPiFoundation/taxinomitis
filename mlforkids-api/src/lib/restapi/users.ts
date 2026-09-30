@@ -1,12 +1,14 @@
+// core dependencies
+import { randomUUID } from 'node:crypto';
 // external dependencies
 import { status as httpstatus } from 'http-status';
 import * as Express from 'express';
-import { v4 as uuid } from 'uuid';
 // local dependencies
 import * as auth0 from '../auth0/users';
 import * as auth from './auth';
 import * as authtypes from '../auth0/auth-types';
 import * as passphrases from '../auth0/passphrases';
+import * as turnstile from '../cloudflare/turnstile';
 import * as store from '../db/store';
 import * as classdeleter from '../classdeleter';
 import * as dblimits from '../db/limits';
@@ -21,6 +23,14 @@ const log = loggerSetup();
 
 
 const VALID_USERNAME = /^[A-Za-z0-9\-_]+$/;
+
+// studentid is an Auth0 user id (e.g. "auth0|58dd72d0b2e87002695249b6") taken
+//  from the URL, and gets used to build the URL of outgoing requests to
+//  Auth0, so it needs to be restricted to a safe set of path-segment
+//  characters - not a hard assumption about Auth0's own id format, just
+//  ruling out anything that could change the shape of the request
+//  (path traversal, extra path segments, query strings, etc)
+const SAFE_USERID_REGEX = /^[A-Za-z0-9|_-]{1,100}$/;
 
 
 function getStudents(req: Express.Request, res: Express.Response) {
@@ -52,8 +62,18 @@ async function createTeacher(req: Express.Request, res: Express.Response) {
         return res.status(httpstatus.BAD_REQUEST)
                    .send({ error : 'Invalid username. Use letters, numbers, hyphens and underscores, only.' });
     }
+    if (!req.body.turnstile) {
+        return res.status(httpstatus.BAD_REQUEST)
+            .send({ error: 'A turnstile token is required to create a new class' });
+    }
 
-    const tenant: string = uuid();
+    const validRequest = await turnstile.validate(req.body.turnstile);
+    if (!validRequest) {
+        return res.status(httpstatus.BAD_REQUEST)
+            .send({ error: 'A valid turnstile token is required to create a new class' });
+    }
+
+    const tenant: string = randomUUID();
 
     try {
         const teacher = await auth0.createTeacher(tenant,
@@ -243,6 +263,9 @@ function passwordRejected(err: any) {
 async function deleteStudent(req: Express.Request, res: Express.Response) {
     const tenant = req.params.classid as string;
     const userid = req.params.studentid as string;
+    if (!userid || !SAFE_USERID_REGEX.test(userid)) {
+        return errors.missingData(res);
+    }
 
     try {
         await auth0.deleteStudent(tenant, userid);
@@ -275,6 +298,9 @@ async function deleteStudent(req: Express.Request, res: Express.Response) {
 function resetStudentPassword(req: Express.Request, res: Express.Response) {
     const tenant = req.params.classid as string;
     const userid = req.params.studentid as string;
+    if (!userid || !SAFE_USERID_REGEX.test(userid)) {
+        return errors.missingData(res);
+    }
 
     return auth0.resetStudentPassword(tenant, userid)
         .then((student) => {

@@ -2,7 +2,7 @@
 # build the app
 # ###############################################
 
-FROM node:22 AS builder
+FROM node:26 AS builder
 
 # run the app in a folder owned by the node user
 # (the legacy Docker builder, which Heroku uses, creates WORKDIR folders as root even after USER, so set the owner before switching user)
@@ -42,7 +42,7 @@ RUN ls -l /usr/src/build
 # prepare app image
 # ###############################################
 
-FROM node:22
+FROM node:26
 
 # run the app in a folder owned by the node user
 WORKDIR /usr/src/app

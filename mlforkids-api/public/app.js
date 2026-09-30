@@ -14,6 +14,32 @@
         '$mdThemingProvider'
     ];
 
+    // angular fetches the templates for pages, dialogs and directives over
+    //  http, so they need handling differently to requests for the REST API.
+    //  the query string is ignored because template requests are versioned
+    function isTemplateRequest(url) {
+        var urlpath = url ? url.split('?')[0] : '';
+        return urlpath.substring(urlpath.length - 5) === '.html';
+    }
+
+    // templates get a version cache-busting query string added to the request
+    //  templateUrl values are all currently written as relative urls, but 
+    //  this is written as a future-proof function to handle a future 
+    //  absolute template url
+    function isVersionableTemplate(url) {
+        try {
+            if (!url || url.indexOf('?') !== -1 || !isTemplateRequest(url)) {
+                return false;
+            }
+            return url.indexOf('static/components/') === 0 ||
+                url.indexOf('/static/components/') === 0;
+        }
+        catch (err) {
+            console.error(err);
+            return false;
+        }
+    }
+
     function config($stateProvider, lockProvider, $urlRouterProvider, jwtOptionsProvider, $httpProvider, $translateProvider, $mdThemingProvider) {
 
         // theme has been hard-coded in the angular-material folder, so
@@ -109,6 +135,11 @@
                     review: true
                 }
             })
+            .state('teacher_language_models', {
+                url: '/teacher/languagemodels',
+                controller: 'TeacherLangModelsController',
+                templateUrl: 'static/components/teacher_langmodels/teacher_langmodels.html'
+            })
             .state('newproject', {
                 url: '/newproject',
                 controller: 'NewProjectController',
@@ -119,6 +150,12 @@
                 url: '/importdataset',
                 controller: 'DatasetsController',
                 templateUrl: 'static/components/datasets/datasets.html',
+                controllerAs: 'vm'
+            })
+            .state('importproject', {
+                url: '/importproject',
+                controller: 'ProjectImportController',
+                templateUrl: 'static/components/projectimport/projectimport.html',
                 controllerAs: 'vm'
             })
             .state('projects', {
@@ -294,6 +331,7 @@
                         responseType: 'token id_token',
                         audience: 'https://' + AUTH0_DOMAIN + '/userinfo',
                         redirectUrl: AUTH0_CALLBACK_URL,
+                        autoParseHash: false,
                         params: {
                             scope: 'openid email app_metadata'
                         }
@@ -333,7 +371,9 @@
         jwtOptionsProvider.config({
             whiteListedDomains: AUTH0_WHITELISTED_DOMAINS,
             tokenGetter: ['options', 'storageService', function (options, storageService) {
-                if (options && options.url.substring(options.url.length - 5) == '.html') {
+                // templates are fetched with a version query string so 
+                // the check has to ignore any query
+                if (options && isTemplateRequest(options.url)) {
                     return null;
                 }
                 return storageService.getItem('id_token');
@@ -345,16 +385,27 @@
 
         $httpProvider.interceptors.push('jwtInterceptor');
 
+        $httpProvider.interceptors.push(function () {
+            return {
+                request : function (httpconfig) {
+                    if (isVersionableTemplate(httpconfig.url)) {
+                        httpconfig.url = httpconfig.url + '?v=360';
+                    }
+                    return httpconfig;
+                }
+            };
+        });
+
         $translateProvider
             .useSanitizeValueStrategy('sanitizeParameters')
             .useStaticFilesLoader({
                 prefix: 'static/languages/',
-                suffix: '.json?v=315'
+                suffix: '.json?v=360'
             })
             .determinePreferredLanguage(function () {
                 var lang = navigator.userLanguage || navigator.language;
 
-                // if it is set via query, use that
+                // if an override is set in a query parameter, use that instead
                 const queries = document.location.search.substring(1).split('&');
                 for (var i = 0; i < queries.length; i++) {
                     var query = queries[i];
@@ -364,64 +415,56 @@
                     }
                 }
 
-                lang = lang.toLowerCase();
+                // default to English if not specified by either browser or query parameter
+                if (!lang || lang.trim() === '') {
+                    lang = 'en';
+                }
+                else {
+                    lang = lang.toLowerCase().trim();
 
-                // shorten en-XX to en
-                if (lang.indexOf('en') === 0) {
-                    lang = 'en';
-                }
-                else if (lang.indexOf('es') === 0) {
-                    lang = 'es';
-                }
-                else if (lang.indexOf('de') === 0) {
-                    lang = 'de';
-                }
-                else if (lang.indexOf('zh') === 0) {
-                    if (lang.indexOf('zh-tw') === 0) {
-                        lang = 'zh-tw';
+                    var normalizedLang = 'en';
+                    // maps language prefixes to normalized codes
+                    //  order matters: more specific variants must come before generic ones
+                    var languageMap = {
+                        'en': 'en',
+                        'ar': 'ar',
+                        'es': 'es',
+                        'de': 'de',
+                        'zh-tw': 'zh-tw',
+                        'zh': 'zh-cn',
+                        'tr': 'tr',
+                        'it': 'it',
+                        'pt-br': 'pt-br',
+                        'pt': 'pt',
+                        'fr': 'fr',
+                        'fi': 'fi',
+                        'ko': 'ko',
+                        'nl': 'nl-be',
+                        'ja': 'ja',
+                        'el': 'el',
+                        'cs': 'cs',
+                        'hr': 'hr',
+                        'pl': 'pl',
+                        'ru': 'ru',
+                        'ro': 'ro',
+                        'hu': 'hu',
+                        'uk': 'uk',
+                        'vi': 'vi',
+                        'cy': 'cy',
+                        'fa': 'fa',
+                        'hy': 'hy',
+                        'sv': 'sv-se',
+                        'si': 'si-lk'
+                    };
+
+                    for (var prefix in languageMap) {
+                        if (lang.indexOf(prefix) === 0) {
+                            normalizedLang = languageMap[prefix];
+                            break;
+                        }
                     }
-                    else {
-                        lang = 'zh-cn';
-                    }
-                }
-                else if (lang.indexOf('fr') === 0) {
-                    lang = 'fr';
-                }
-                else if (lang.indexOf('ko') === 0) {
-                    lang = 'ko';
-                }
-                else if (lang.indexOf('nl') === 0) {
-                    lang = 'nl-be';
-                }
-                else if (lang.indexOf('ja') === 0) {
-                    lang = 'ja';
-                }
-                else if (lang.indexOf('el') === 0) {
-                    lang = 'el';
-                }
-                else if (lang.indexOf('it') === 0) {
-                    lang = 'it';
-                }
-                else if (lang.indexOf('cs') === 0) {
-                    lang = 'cs';
-                }
-                else if (lang.indexOf('ar') === 0) {
-                    lang = 'ar';
-                }
-                else if (lang.indexOf('hr') === 0) {
-                    lang = 'hr';
-                }
-                else if (lang.indexOf('pl') === 0) {
-                    lang = 'pl';
-                }
-                else if (lang.indexOf('ru') === 0) {
-                    lang = 'ru';
-                }
-                else if (lang.indexOf('ro') === 0) {
-                    lang = 'ro';
-                }
-                else if (lang.trim() === '') {
-                    lang = 'en';
+
+                    lang = normalizedLang;
                 }
 
                 return lang;

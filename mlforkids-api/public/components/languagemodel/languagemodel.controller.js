@@ -6,14 +6,18 @@
 
     LanguageModelController.$inject = [
         'authService', 'projectsService', 'trainingService',
-        'wikipediaService', 'languageModelService', 'txtService',
-        'gpuDetectionService', 'utilService', 'loggerService',
-        '$mdDialog',
-        '$stateParams',
-        '$scope', '$window', '$timeout', '$q'
+        'wikipediaService', 'weatherService',
+        'languageModelService', 'txtService',
+        'utilService', 'loggerService',
+        '$mdDialog', '$stateParams', '$scope', '$window', '$timeout', '$q'
     ];
 
-    function LanguageModelController(authService, projectsService, trainingService, wikipediaService, languageModelService, txtService, gpuDetectionService, utilService, loggerService, $mdDialog, $stateParams, $scope, $window, $timeout, $q) {
+    function LanguageModelController(authService, projectsService, trainingService, 
+                                     wikipediaService, weatherService, 
+                                     languageModelService, txtService, 
+                                     utilService, loggerService, 
+                                     $mdDialog, $stateParams, $scope, $window, $timeout, $q) 
+    {
         var vm = this;
         vm.authService = authService;
 
@@ -85,6 +89,7 @@
                 CONTEXTWINDOW : 'small_contextwindow',
                 TEMPERATURE   : 'small_temperature',
                 RAGCONTEXT    : 'small_ragcontext',
+                TOOLS         : 'small_tools',
                 READY         : 'small_ready'
             }
         };
@@ -105,6 +110,61 @@
         $scope.reconfiguring = false;
         $scope.generatedmessages = [];
 
+        // y-axis scale for the model architecture charts - expanded when
+        //  a model too big for the normal scale is selected
+        const SIZE_CHART_MAX = 1500;       // MB of storage
+        const COMPLEXITY_CHART_MAX = 3.0;  // billions of parameters
+        $scope.sizeChartMax = SIZE_CHART_MAX;
+        $scope.complexityChartMax = COMPLEXITY_CHART_MAX;
+
+        // tools that can be made available to small language models
+        //  that support tool calling - each parameter is described
+        //  as { name, type, description }, with the names of the
+        //  parameters that are not optional listed in required
+        $scope.slmTools = [
+            {
+                title : 'get_date_time',
+                description : 'gets the current date and time',
+                parameters : [],
+                required : [],
+                implementation : function () {
+                    return new Date().toLocaleString(undefined, {
+                        dateStyle : 'full',
+                        timeStyle : 'medium'
+                    });
+                }
+            },
+            {
+                title : 'multiply_two_numbers',
+                description : 'multiplies two numbers together',
+                parameters : [
+                    { name : 'number1', type : 'Number', description : 'first number to multiply' },
+                    { name : 'number2', type : 'Number', description : 'second number to multiply' }
+                ],
+                required : [ 'number1', 'number2' ],
+                implementation : function (args) {
+                    return String(args.number1 * args.number2);
+                }
+            },
+            {
+                title : 'get_weather',
+                description : 'gets the current weather for a place - including temperature and wind speed',
+                parameters : [
+                    { name : 'latitude',  type: 'Number', description : 'how far north or south the place is, e.g. 51.5 for London UK' },
+                    { name : 'longitude', type: 'Number', description : 'how far east or west the place is, e.g. -0.1 for London UK' }
+                ],
+                required : [ 'latitude', 'longitude' ],
+                implementation : function (args) {
+                    return weatherService.getCurrentWeather(args.latitude, args.longitude)
+                        .then((weather) => {
+                            return weather.description + ', ' +
+                                   'temperature is ' + weather.temperature + '°C ' +
+                                   'wind speed is ' + weather.windspeed + ' km/h';
+                        });
+                }
+            }
+        ];
+
         // toy language models
         $scope.corpus = [];
         $scope.generatedtokens = [];
@@ -123,179 +183,6 @@
 
 
         // ===================================================================
-        // SMALL LANGUAGE MODELS - available models
-        // ===================================================================
-
-        const modelsWhenShaderF16Supported = [
-            {
-                id : 'SmolLM2-135M-Instruct-q0f16-MLC',
-                version : 'SmolLM2',
-                size : '135M',
-                billionparameters : 0.135,
-                label : 'Smol',
-                developer : 'Hugging Face',
-                storage : '276 MB',
-                storagemb : 276
-            },
-            {
-                id : 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC',
-                version : '2.5',
-                size : '0.5B',
-                billionparameters : 0.5,
-                label : 'Qwen',
-                developer : 'Alibaba',
-                storage : '289 MB',
-                storagemb : 289
-            },
-            {
-                id : 'TinyLlama-1.1B-Chat-v1.0-q4f16_1-MLC-1k',
-                version : '1.0',
-                size : '1.1B',
-                billionparameters : 1.1,
-                label : 'Tiny Llama',
-                developer : 'Singapore University of Technology and Design',
-                storage : '625 MB',
-                storagemb : 625
-            },
-            {
-                id : 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
-                version : '3.2',
-                size : '1B',
-                billionparameters : 1.0,
-                label : 'Llama',
-                developer : 'Meta',
-                storage : '711 MB',
-                storagemb : 711
-            },
-            {
-                id : 'phi-1_5-q4f16_1-MLC',
-                version : '1.5',
-                size : '1.3B',
-                billionparameters : 1.3,
-                label : 'Phi',
-                developer : 'Microsoft',
-                storage : '806 MB',
-                storagemb : 806
-            },
-            {
-                id : 'stablelm-2-zephyr-1_6b-q4f16_1-MLC-1k',
-                version : '2',
-                size : '1.6B',
-                billionparameters : 1.6,
-                label : 'Zephyr',
-                developer : 'Stability AI',
-                storage : '932 MB',
-                storagemb : 932
-            },
-            {
-                id : 'gemma-2-2b-it-q4f16_1-MLC-1k',
-                version : '2',
-                size : '2B',
-                billionparameters : 2.0,
-                label : 'Gemma',
-                developer : 'Google',
-                storage : '1.5 GB',
-                storagemb : 1500
-            },
-            {
-                id : 'RedPajama-INCITE-Chat-3B-v1-q4f16_1-MLC-1k',
-                version : '1',
-                size : '3B',
-                billionparameters : 3.0,
-                label : 'RedPajama',
-                developer : 'Together',
-                storage : '1.5 GB',
-                storagemb : 1500
-            }
-        ];
-        const modelsWhenShaderF16NotSupported = [
-            {
-                id : 'SmolLM2-135M-Instruct-q0f32-MLC',
-                version : 'SmolLM2',
-                size : '135M',
-                billionparameters : 0.135,
-                label : 'Smol',
-                developer : 'Hugging Face',
-                storage : '269 MB',
-                storagemb : 269
-            },
-            {
-                id : 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC',
-                version : '2.5',
-                size : '0.5B',
-                billionparameters : 0.5,
-                label : 'Qwen',
-                developer : 'Alibaba',
-                storage : '289 MB',
-                storagemb : 289
-            },
-            {
-                id : 'TinyLlama-1.1B-Chat-v1.0-q4f32_1-MLC-1k',
-                version : '1.0',
-                size : '1.1B',
-                billionparameters : 1.1,
-                label : 'Tiny Llama',
-                developer : 'Singapore University of Technology and Design',
-                storage : '627 MB',
-                storagemb : 627
-            },
-            {
-                id : 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
-                version : '3.2',
-                size : '1B',
-                billionparameters : 1.0,
-                label : 'Llama',
-                developer : 'Meta',
-                storage : '711 MB',
-                storagemb : 711
-            },
-            {
-                id : 'phi-1_5-q4f32_1-MLC',
-                version : '1.5',
-                size : '1.3B',
-                billionparameters : 1.3,
-                label : 'Phi',
-                developer : 'Microsoft',
-                storage : '806 MB',
-                storagemb : 806
-            },
-            {
-                id : 'stablelm-2-zephyr-1_6b-q4f16_1-MLC-1k',
-                version : '2',
-                size : '1.6B',
-                billionparameters : 1.6,
-                label : 'Zephyr',
-                developer : 'Stability AI',
-                storage : '932 MB',
-                storagemb : 932
-            },
-            {
-                id : 'gemma-2-2b-it-q4f32_1-MLC-1k',
-                version : '2',
-                size : '2B',
-                billionparameters : 2.0,
-                label : 'Gemma',
-                developer : 'Google',
-                storage : '1.5 GB',
-                storagemb : 1494
-            },
-            {
-                id : 'RedPajama-INCITE-Chat-3B-v1-q4f32_1-MLC-1k',
-                version : '1',
-                size : '3B',
-                billionparameters : 3.0,
-                label : 'RedPajama',
-                developer : 'Together',
-                storage : '1.7 GB',
-                storagemb : 1714
-            }
-        ];
-
-        // -------------------------------------------------------------------
-
-
-
-        // ===================================================================
         // PAGE INITIALISATION
         // ===================================================================
 
@@ -305,7 +192,7 @@
                 vm.profile = profile;
 
                 // load saved project info
-                loggerService.debug('[ml4kproj] getting project info');
+                loggerService.debug('[ml4klanguage] getting project info');
                 return projectsService.getProject($scope.projectId, $scope.userId, profile.tenant);
             })
             .then((project) => {
@@ -336,16 +223,20 @@
                 .then(() => {
                     if ($scope.project.slm && $scope.project.slm.id) {
                         $scope.lookupSmallLanguageModelDetails();
+                        $scope.project.slm.toolsenabled ??= false;
                         return $scope.downloadModel()
-                            .then(() => {
-                                $scope.project.slm.ready = true;
-                                $scope.phase = $scope.PHASES.SMALL.READY;
+                            .then((succeeded) => {
+                                if (succeeded) {
+                                    $scope.project.slm.ready = true;
+                                    $scope.phase = $scope.PHASES.SMALL.READY;
+                                }
                             });
                     }
                     else {
                         $scope.project.slm = {
                             temperature : 1.0,
-                            topp : 1.0
+                            topp : 1.0,
+                            toolsenabled : null
                         };
                         $scope.phase = $scope.PHASES.SMALL.ARCHITECTURE;
                     }
@@ -459,7 +350,8 @@
                     else if (type === 'small') {
                         $scope.project.slm = {
                             temperature : 1.0,
-                            topp : 1.0
+                            topp : 1.0,
+                            toolsenabled : null
                         };
                         $scope.phase = $scope.PHASES.SMALL.ARCHITECTURE;
                     }
@@ -490,6 +382,11 @@
                 return parseCorpus()
                     .then(() => {
                         $scope.$applyAsync(() => { $scope.loading = false; });
+                    })
+                    .catch((err) => {
+                        loggerService.error('[ml4klanguage] error parsing corpus', err);
+                        $scope.loading = false;
+                        displayAlert('errors', 500, err);
                     });
             }
         }
@@ -667,10 +564,19 @@
         // TOY LANGUAGE MODEL - CORPUS PROCESSING - turning into n-grams
         // ===================================================================
 
+        // an empty corpus can never produce any tokens, so this is used to
+        //  skip calling the ngrams API when there's obviously nothing to analyze
+        const EMPTY_NGRAMS_OUTPUT = {
+            bigrams : { count : 0 }, trigrams : { count : 0 }, tetragrams : { count : 0 }
+        };
+
         function parseCorpus() {
             loggerService.debug('[ml4klanguage] parseCorpus');
             return trainingService.getTraining($scope.projectId, $scope.userId, $scope.project.classid)
                 .then((corpus) => {
+                    if (corpus.length === 0) {
+                        return EMPTY_NGRAMS_OUTPUT;
+                    }
                     const text = corpus.map((doc) => doc.contents);
                     return languageModelService.generateNgrams($scope.userId, $scope.project.classid, text);
                 })
@@ -678,6 +584,12 @@
                     if (output.bigrams.count === 0) {
                         displayAlert('warnings', 400, { message : 'Please add more text to your corpus' });
                         $scope.phase = $scope.PHASES.TOY.CORPUS;
+
+                        // discard any previous analysis 
+                        analyzedCorpus = undefined;
+                        delete $scope.project.toy.tokens;
+                        $scope.project.toy.ready = false;
+
                         return;
                     }
 
@@ -936,10 +848,10 @@
         // Invoked when creating a new small language model project, or restoring a saved one
         //   Loads the web-llm library used to operate language models
         function setupSlmSupport () {
-            return gpuDetectionService.isShaderF16Supported()
-                .then((useShaderF16) => {
-                    loggerService.debug('[ml4klanguage] shaderf16 support', useShaderF16);
-                    $scope.slmModels = useShaderF16 ? modelsWhenShaderF16Supported : modelsWhenShaderF16NotSupported;
+            return languageModelService.getSupportedModels()
+                .then((supportedModels) => {
+                    loggerService.debug('[ml4klanguage] supported models', supportedModels);
+                    $scope.slmModels = supportedModels;
                     $scope.sizeChartData = $scope.slmModels.map((m) => {
                         return { id : m.id, label : m.label, value : m.storagemb };
                     });
@@ -1012,6 +924,7 @@
                     if (!$scope.reconfiguring) {
                         $scope.phase = $scope.PHASES.SMALL.CONTEXTWINDOW;
                     }
+                    return true;
                 })
                 .catch((err) => {
                     loggerService.error('[ml4klanguage] Failed to download model', err);
@@ -1041,9 +954,25 @@
                                         'requirements. '});
                     }
                     else {
-                        displayAlert('errors', 500, err);
+                        displayAlert('errors', 500,
+                            { message : (err.message || 'Something went wrong.') +
+                                        ' It might help to refresh the page.'});
                     }
+                    return false;
                 });
+        };
+
+        // invoked when the user picks a different model from the list
+        //  (not used when restoring a saved project, so that the saved
+        //   tools choice is kept)
+        $scope.changeSmallLanguageModel = function () {
+            loggerService.debug('[ml4klanguage] changeSmallLanguageModel');
+
+            $scope.lookupSmallLanguageModelDetails();
+
+            // the tools choice needs to be made again for the new model
+            //  (models without tool support have tools disabled)
+            $scope.project.slm.toolsenabled = $scope.project.slm.toolsupport ? null : false;
         };
 
         // the selected model has changed - update the UI with info about the new model
@@ -1051,12 +980,26 @@
             loggerService.debug('[ml4klanguage] lookupSmallLanguageModelDetails');
 
             if ($scope.project.slm.id) {
-                const identifiedModel = $scope.slmModels.find((m) => m.id === $scope.project.slm.id);
+                const identifiedModel = $scope.slmModels.find((m) => m.id === $scope.project.slm.id) ||
+                                        languageModelService.getAllModels().find((m) => m.id === $scope.project.slm.id);
+
+                if (!identifiedModel) {
+                    return;
+                }
+
                 $scope.project.slm.version = identifiedModel.version;
                 $scope.project.slm.size = identifiedModel.size;
                 $scope.project.slm.label = identifiedModel.label;
                 $scope.project.slm.developer = identifiedModel.developer;
                 $scope.project.slm.storage = identifiedModel.storage;
+                $scope.project.slm.toolsupport = identifiedModel.toolsupport;
+
+                // outlier models don't fit the normal chart scale, so the
+                //  y-axis is expanded they are selected (bars taller
+                //  than the scale allows are cropped by the chart)
+                $scope.sizeChartMax = Math.max(SIZE_CHART_MAX, identifiedModel.storagemb);
+                $scope.complexityChartMax = Math.max(COMPLEXITY_CHART_MAX, identifiedModel.billionparameters);
+
                 // reset current download status
                 $scope.project.slm.ready = false;
                 delete $scope.project.slm.download;
@@ -1067,6 +1010,16 @@
         // size of context window has been modified
         $scope.modifySmallModelContextWindow = function () {
             loggerService.debug('[ml4klanguage] modifySmallModelContextWindow');
+
+            // guard against overlapping calls to webllmEngine.reload() -
+            //  the underlying WebGPU device cannot tolerate two reloads
+            //  running concurrently, and can be left in an unrecoverable
+            //  state (surfaced as an unhandled "OperationError: A valid
+            //  external Instance reference no longer exists" rejection
+            //  from deep inside the webllm library - MACHINELEARNINGFORKIDS-6ZG)
+            if ($scope.reconfiguring) {
+                return;
+            }
 
             $scope.reconfiguring = true;
             $scope.downloadModel()
@@ -1131,6 +1084,8 @@
             }
         };
         $scope.removeContextDoc = function () {
+            $scope.resetContextWindow();
+
             if ($scope.project.slm.initialcontext) {
                 delete $scope.project.slm.initialcontext.doc;
             }
@@ -1264,6 +1219,69 @@
 
 
 
+        // ===================================================================
+        // SMALL LANGUAGE MODEL - TOOLS
+        //   starting phase:     SMALL.RAGCONTEXT
+        //   finishing phase:    SMALL.TOOLS
+        // ===================================================================
+        // invoked when the user clicks Next after providing initial context
+        $scope.initSmallModelTools = function () {
+            loggerService.debug('[ml4klanguage] initSmallModelTools');
+            if ($scope.project.slm.toolsupport) {
+                $scope.phase = $scope.PHASES.SMALL.TOOLS;
+            }
+            else {
+                $scope.setProjectReady();
+            }
+        };
+        $scope.setSmallModelToolsEnabled = function (enabled) {
+            $scope.project.slm.toolsenabled = enabled;
+
+            if ($scope.phase === $scope.PHASES.SMALL.READY) {
+                saveSmallLanguageModel();
+            }
+        };
+        $scope.canRunTool = function (tool) {
+            return tool.parameters.every((param) => {
+                if (tool.required.indexOf(param.name) === -1) {
+                    return true;
+                }
+                return param.testvalue !== undefined &&
+                       param.testvalue !== null &&
+                       param.testvalue !== '';
+            });
+        };
+        $scope.tryTool = function (tool) {
+            loggerService.debug('[ml4klanguage] tryTool', tool.title);
+
+            const args = {};
+            for (const param of tool.parameters) {
+                if (param.testvalue !== undefined &&
+                    param.testvalue !== null &&
+                    param.testvalue !== '')
+                {
+                    args[param.name] = param.testvalue;
+                }
+            }
+
+            tool.testoutput = '...';
+            $q.when()
+                .then(() => {
+                    return tool.implementation(args);
+                })
+                .then((output) => {
+                    tool.testoutput = String(output);
+                })
+                .catch((err) => {
+                    loggerService.error('[ml4klanguage] tool error', err);
+                    tool.testoutput = 'Error: ' + (err && err.message ? err.message : 'unable to run tool');
+                });
+        };
+
+        // -------------------------------------------------------------------
+
+
+
 
         // ===================================================================
         // SAVE MODEL
@@ -1275,11 +1293,13 @@
                     contextwindow : $scope.project.slm.contextwindow,
                     temperature : $scope.project.slm.temperature,
                     topp : $scope.project.slm.topp,
-                    initialcontext : $scope.project.slm.initialcontext
+                    initialcontext : $scope.project.slm.initialcontext,
+                    toolsenabled : $scope.project.slm.toolsenabled
                 })
                 .then((updated) => {
                     updated.slm.download = $scope.project.slm.download;
                     updated.slm.ready = true;
+                    updated.slm.toolsupport = $scope.project.slm.toolsupport;
                     return updated;
                 });
         }
@@ -1372,7 +1392,19 @@
                 })
                 .catch((err) => {
                     loggerService.error('[ml4klanguage] error submitting prompt', err);
-                    displayAlert('errors', 500, err);
+
+                    if ($scope.project.modeltype === 'small') {
+                        displayAlert('errors', 500, {
+                            message : (err.message || 'Something went wrong.') +
+                                      ' Please refresh the page.'
+                        });
+                    }
+                    else {
+                        $scope.$applyAsync(() => {
+                            $scope.generating = false;
+                        });
+                        displayAlert('errors', 500, err);
+                    }
                 });
         };
 
@@ -1540,7 +1572,7 @@
             $scope.generatedtokens = [ { idx : 0, text : '...' } ];
 
             if ($scope.project.toy.ready && analyzedCorpus) {
-                const promptTokens = prompt.split(' ');
+                const promptTokens = prompt.trim().split(/\s+/);
                 if (promptTokens.length < $scope.project.toy.ngrams) {
                     $scope.testfeedbackmoretokens = true;
                     return $q.resolve('');
@@ -1612,8 +1644,8 @@
                         'Always be positive and constructive. Avoid sarcasm or harsh language. ' +
                         systemPromptInsert +
                         'Promote digital safety by reminding children not to share personal ' +
-                        'information. If a child asks something unsafe, gently guide them toward ' +
-                        'a trusted adult.'
+                        'information. Do not ask for personal information. If a child asks ' +
+                        'something unsafe, gently guide them toward a trusted adult.'
                 }
             ];
         }
@@ -1649,65 +1681,299 @@
             scrollToNewMessage();
 
             try {
-                const completion = await $scope.webllmEngine.chat.completions.create({
-                    stream: true,
-                    messages : $scope.generatedmessages.filter((m) => !m.inprogress).map((m) => { return { role : m.role, content : m.content }}),
-                    top_p : $scope.project.slm.topp,
-                    temperature : $scope.project.slm.temperature
-                });
-
-                const nextMessageIdx = $scope.generatedmessages.push({
-                    role : 'assistant', content : '', render : '...', inprogress : true
-                }) - 1;
-                scrollToNewMessage();
-
-                for await (const chunk of completion) {
-                    const curDelta = chunk.choices[0].delta.content;
-                    if (curDelta) {
-                        const formatted = curDelta.replace(/\n/g, '<br>');
-                        $scope.$applyAsync(() => {
-                            $scope.generatedmessages[nextMessageIdx].content += curDelta;
-                            if ($scope.generatedmessages[nextMessageIdx].render === '...') {
-                                $scope.generatedmessages[nextMessageIdx].render = formatted;
-                            }
-                            else {
-                                $scope.generatedmessages[nextMessageIdx].render  += formatted;
-                            }
-                        });
-                    }
+                if ($scope.project.slm.toolsenabled === true) {
+                    await generateResponseUsingTools();
                 }
-
-                const finalMessage = await $scope.webllmEngine.getMessage();
-                const response = finalMessage.replace(/\n/g, '<br>');
-
-                loggerService.debug('[ml4klanguage] response', response);
-                $scope.generatedmessages[nextMessageIdx].content = finalMessage;
-                $scope.generatedmessages[nextMessageIdx].render = response;
-                delete $scope.generatedmessages[nextMessageIdx].inprogress;
+                else {
+                    await generateStreamedResponse();
+                }
             }
             catch (err) {
                 loggerService.error('[ml4klanguage] failure from small language model', err);
                 $scope.generatedmessages = $scope.generatedmessages.filter((m) => !m.inprogress);
 
-                if (err.message.includes('tokens exceed context window size') && $scope.generatedmessages.length > 1)
+                if (err.message && err.message.includes('tokens exceed context window size') && $scope.generatedmessages.length > 1)
                 {
                     if (ragPrompt) {
                         displayAlert('errors', err.status, { message : simplifyError(err.message) });
                     }
                     else {
-                        // remove the user prompt just added
-                        $scope.generatedmessages.pop();
+                        // remove the messages from the failed attempt - the
+                        //  user prompt just added, plus any tool calls made
+                        //  before the failure
+                        const promptIdx = $scope.generatedmessages.findLastIndex((m) => m.role === 'user');
+                        if (promptIdx > 0) {
+                            $scope.generatedmessages.splice(promptIdx);
+                        }
 
-                        // remove the oldest non-system message
-                        $scope.generatedmessages.splice(1, 1);
+                        if ($scope.generatedmessages.length > 1) {
+                            // remove the oldest non-system message - an
+                            //  assistant message requesting tool calls is
+                            //  removed together with its tool results, as
+                            //  the model cannot accept one without the other
+                            let removeCount = 1;
+                            if ($scope.generatedmessages[1].tool_calls) {
+                                while ((1 + removeCount) < $scope.generatedmessages.length &&
+                                       $scope.generatedmessages[1 + removeCount].role === 'tool')
+                                {
+                                    removeCount += 1;
+                                }
+                            }
+                            $scope.generatedmessages.splice(1, removeCount);
 
-                        // retry
-                        return useSmallLanguageModel(prompt);
+                            // retry
+                            loggerService.debug('[ml4klanguage] removed oldest conversation history to make space - retrying');
+                            return useSmallLanguageModel(prompt);
+                        }
+                        else {
+                            // there is no old conversation history that can
+                            //  be removed to make space, so retrying with
+                            //  the same prompt cannot help
+                            displayAlert('errors', err.status, { message : simplifyError(err.message) });
+                        }
                     }
                 }
                 else {
                     throw err;
                 }
+            }
+        }
+
+        // returns the conversation so far in the form needed for the model -
+        //  WebLLM mutates the messages array that it is given (prepending its
+        //  own system prompt) so a copy of the messages is always returned
+        function getMessagesPayload(usingTools) {
+            return $scope.generatedmessages
+                .filter((m) => {
+                    if (m.inprogress) {
+                        return false;
+                    }
+                    // tool-calling exchanges are only submitted when tools
+                    //  are enabled - no information is lost by leaving them
+                    //  out, as the outcome of each exchange is repeated in
+                    //  a regular assistant message
+                    if (!usingTools && (m.tool_calls || m.role === 'tool')) {
+                        return false;
+                    }
+                    return true;
+                })
+                .map((m) => {
+                    const message = { role : m.role, content : m.content };
+                    // WebLLM does not allow a custom system prompt to be used
+                    //  with function calling (it needs the system prompt for
+                    //  its own tool definitions) so when tools are being used
+                    //  the system prompt is submitted as a user message instead
+                    if (usingTools && message.role === 'system') {
+                        message.role = 'user';
+                    }
+                    if (m.tool_calls) {
+                        message.tool_calls = m.tool_calls;
+                    }
+                    if (m.tool_call_id) {
+                        message.tool_call_id = m.tool_call_id;
+                    }
+                    return message;
+                });
+        }
+
+        async function generateStreamedResponse() {
+            const completion = await $scope.webllmEngine.chat.completions.create({
+                stream: true,
+                messages : getMessagesPayload(),
+                top_p : $scope.project.slm.topp,
+                temperature : $scope.project.slm.temperature
+            });
+
+            const nextMessageIdx = $scope.generatedmessages.push({
+                role : 'assistant', content : '', render : '...', inprogress : true
+            }) - 1;
+            scrollToNewMessage();
+
+            for await (const chunk of completion) {
+                const curDelta = chunk.choices[0].delta.content;
+                if (curDelta) {
+                    const formatted = curDelta.replace(/\n/g, '<br>');
+                    $scope.$applyAsync(() => {
+                        $scope.generatedmessages[nextMessageIdx].content += curDelta;
+                        if ($scope.generatedmessages[nextMessageIdx].render === '...') {
+                            $scope.generatedmessages[nextMessageIdx].render = formatted;
+                        }
+                        else {
+                            $scope.generatedmessages[nextMessageIdx].render  += formatted;
+                        }
+                    });
+                }
+            }
+
+            const finalMessage = await $scope.webllmEngine.getMessage();
+            const response = finalMessage.replace(/\n/g, '<br>');
+
+            loggerService.debug('[ml4klanguage] response', response);
+            $scope.generatedmessages[nextMessageIdx].content = finalMessage;
+            $scope.generatedmessages[nextMessageIdx].render = response;
+            delete $scope.generatedmessages[nextMessageIdx].inprogress;
+        }
+
+
+        async function generateResponseUsingTools() {
+            // function-calling models will almost always respond with a tool
+            //  call when tools are provided (rather than ever deciding they
+            //  are finished) so the number of model calls is capped to avoid 
+            //  it looping forever
+            const MAX_TOOL_CALLS = 10;
+
+            // display a placeholder while the response is generated
+            $scope.generatedmessages.push({
+                role : 'assistant', content : '', render : '...', inprogress : true
+            });
+            scrollToNewMessage();
+
+            let finalMessage = 'Sorry - I was not able to use tools to answer that.';
+
+            for (let i = 0; i < MAX_TOOL_CALLS; i++) {
+                const completion = await $scope.webllmEngine.chat.completions.create({
+                    messages : getMessagesPayload(true),
+                    top_p : $scope.project.slm.topp,
+                    temperature : $scope.project.slm.temperature,
+                    tools : getToolDefinitionsForModel(),
+                    tool_choice : 'auto'
+                });
+
+                const choice = completion.choices[0];
+                loggerService.debug('[ml4klanguage] tools response', choice);
+
+                if (choice.finish_reason === 'length') {
+                    // the context window filled before the model could
+                    //  finish generating - display whatever was generated
+                    //  before the cut-off, with an explanation of what
+                    //  went wrong
+                    loggerService.debug('[ml4klanguage] response truncated - context window full');
+                    displayAlert('errors', 400, {
+                        message : 'Your model ran out of room in its context window before it ' +
+                                  'could finish responding. Try a shorter prompt, or increase ' +
+                                  'the size of the context window.'
+                    });
+                    finalMessage = choice.message.content || '';
+                    break;
+                }
+
+                if (choice.finish_reason !== 'tool_calls' ||
+                    !choice.message.tool_calls ||
+                    choice.message.tool_calls.length === 0)
+                {
+                    // regular text response - the model decided no tool
+                    //  was needed to respond (never seen this happen!)
+                    finalMessage = choice.message.content || '';
+                    break;
+                }
+
+                // record the model's request to use tools
+                //  (content can be null in a tool call response, but WebLLM
+                //   requires message content to be a string)
+                $scope.generatedmessages.push({
+                    role : 'assistant',
+                    content : choice.message.content || '',
+                    tool_calls : choice.message.tool_calls
+                });
+
+                // run each of requested tool, adding the output to the
+                //  messages so the model can use it
+                let toolProblems = false;
+                const toolResults = [];
+                for (const toolCall of choice.message.tool_calls) {
+                    const result = await runToolForModel(toolCall.function.name, toolCall.function.arguments);
+                    loggerService.debug('[ml4klanguage] tool call',
+                        toolCall.function.name, toolCall.function.arguments, result);
+
+                    $scope.generatedmessages.push({
+                        role : 'tool',
+                        tool_call_id : toolCall.id,
+                        content : result
+                    });
+                    toolResults.push(result);
+
+                    if (result.startsWith('Error:')) {
+                        toolProblems = true;
+                    }
+                }
+
+                // trigger a digest so the tool activity is displayed while
+                //  the conversation continues
+                $scope.$applyAsync();
+                scrollToNewMessage();
+
+                // if all tools ran successfully, their output is used as the
+                //  response (function-calling models will not reliably produce
+                //  a final text response of their own)
+                // if any tool reported a problem, loop again to give the model
+                //  a chance to correct its tool request
+                if (!toolProblems) {
+                    finalMessage = toolResults.join('\n');
+                    break;
+                }
+            }
+
+            $scope.$applyAsync(() => {
+                $scope.generatedmessages = $scope.generatedmessages.filter((m) => !m.inprogress);
+                // nothing to display if the response was cut off before
+                //  any text was generated
+                if (finalMessage) {
+                    $scope.generatedmessages.push({
+                        role : 'assistant',
+                        content : finalMessage,
+                        render : finalMessage.replace(/\n/g, '<br>')
+                    });
+                }
+            });
+        }
+
+        // describes available tools in OpenAI-style
+        function getToolDefinitionsForModel() {
+            return $scope.slmTools.map((tool) => {
+                const properties = {};
+                for (const param of tool.parameters) {
+                    properties[param.name] = {
+                        type : param.type.toLowerCase(),
+                        description : param.description
+                    };
+                }
+                return {
+                    type : 'function',
+                    function : {
+                        name : tool.title,
+                        description : tool.description,
+                        parameters : {
+                            type : 'object',
+                            properties : properties,
+                            required : tool.required
+                        }
+                    }
+                };
+            });
+        }
+
+        // runs a tool in response to a request from the model, where the
+        //  arguments are provided as a JSON string
+        // problems are returned as 'Error: ...' strings for the model to
+        //  respond to, as exceptions would abort the conversation
+        async function runToolForModel(name, argsjson) {
+            const tool = $scope.slmTools.find((t) => t.title === name);
+            if (!tool) {
+                return 'Error: tool "' + name + '" not found. Available tools: ' +
+                        $scope.slmTools.map((t) => t.title).join(', ');
+            }
+            try {
+                const args = argsjson ? JSON.parse(argsjson) : {};
+                for (const paramname of tool.required) {
+                    if (!(paramname in args)) {
+                        return 'Error: missing required parameter "' + paramname + '"';
+                    }
+                }
+                // implementations can return a string or a promise of one
+                return String(await tool.implementation(args));
+            }
+            catch (err) {
+                return 'Error: ' + (err && err.message ? err.message : 'unable to run tool');
             }
         }
 

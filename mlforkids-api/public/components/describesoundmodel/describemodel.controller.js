@@ -6,10 +6,11 @@
 
     SoundDescribeController.$inject = [
         'authService', 'loggerService', 'browserStorageService', 'projectsService',
-        '$stateParams', '$scope', '$timeout', '$document'
+        'scrollService',
+        '$stateParams', '$scope'
     ];
 
-    function SoundDescribeController(authService, loggerService, browserStorageService, projectsService, $stateParams, $scope, $timeout, $document) {
+    function SoundDescribeController(authService, loggerService, browserStorageService, projectsService, scrollService, $stateParams, $scope) {
         var vm = this;
         vm.authService = authService;
 
@@ -48,13 +49,6 @@
             return newId;
         }
 
-        function scrollToNewItem(itemId) {
-            $timeout(function () {
-                var newItem = document.getElementById(itemId);
-                $document.duScrollToElementAnimated(angular.element(newItem));
-            }, 0);
-        }
-
 
         authService.getProfileDeferred()
             .then(function (profile) {
@@ -82,11 +76,12 @@
                     errId = displayAlert('warnings', 400, {
                         message : 'Model information is not available. Try training a new model.'
                     });
+                    scrollService.scrollToNewItem('warnings' + errId);
                 }
                 else {
                     errId = displayAlert('errors', err.status, err.data || err);
+                    scrollService.scrollToNewItem('errors' + errId);
                 }
-                scrollToNewItem('errors' + errId);
                 $scope.loading = false;
             });
     }

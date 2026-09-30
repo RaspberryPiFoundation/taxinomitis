@@ -1,6 +1,7 @@
+// core dependencies
+import { randomUUID } from 'node:crypto';
 // external dependencies
 import { status as httpStatus } from 'http-status';
-import { v1 as uuid } from 'uuid';
 // local dependencies
 import * as store from '../db/store';
 import * as iam from '../iam';
@@ -31,9 +32,25 @@ export const ERROR_MESSAGES = {
     MODEL_NOT_FOUND : 'Your machine learning model could not be found on the training server.',
     TEXT_TOO_LONG : 'text cannot be longer than 2048 characters',
     SERVICE_ERROR : 'The Watson Assistant service that runs your machine learning model reported an unexpected error',
+    MAINTENANCE : 'Sorry, the IBM Watson Assistant service used to train models to recognise text is currently undergoing maintenance',
     SKILL_IN_USE : 'Machine Learning for Kids is not allowed to delete this Watson Assistant workspace because ' +
                    'it is being used. Please delete it from IBM Cloud.',
 };
+
+
+// Builds the URL of a Watson Assistant workspace, safely encoding the
+//  workspace id so it cannot be used to redirect the request to a
+//  different path or endpoint on the IBM Cloud service.
+function workspaceUrl(baseUrl: string, workspaceId: string): string {
+    return baseUrl + '/v1/workspaces/' + encodeURIComponent(workspaceId);
+}
+
+
+function isMaintenanceError(err: any): boolean {
+    return err.statusCode === httpStatus.INTERNAL_SERVER_ERROR &&
+           err.error &&
+           err.error.error === 'Service is currently undergoing maintenance.';
+}
 
 
 export async function trainClassifier(
@@ -91,7 +108,7 @@ async function createWorkspace(
 {
     let workspace;
 
-    const id: string = uuid();
+    const id: string = randomUUID();
 
     let finalError:string;
     let shuffledCredentialsPool: TrainingObjects.BluemixCredentials[];
@@ -166,6 +183,14 @@ async function createWorkspace(
                 log.warn({ err, project, credentials }, 'Watson Assistant credentials rejected');
                 throw err;
             }
+            else if (isMaintenanceError(err))
+            {
+                // IBM is doing planned maintenance on the Watson Assistant service.
+                // This isn't something we (or the user) can do anything about, so
+                //  we don't need to notify the Slack bot - just let the user know.
+                log.warn({ err, project, credentials : credentials.id }, 'Watson Assistant service is in maintenance mode');
+                throw new Error(ERROR_MESSAGES.MAINTENANCE);
+            }
             else {
                 // Otherwise - rethrow it so we can bug out.
                 log.error({ err, project, credentials : credentials.id }, 'Unhandled Conversation exception');
@@ -236,7 +261,7 @@ async function updateWorkspace(
     tenantPolicy: DbObjects.ClassTenant,
 ): Promise<TrainingObjects.ConversationWorkspace>
 {
-    const url = credentials.url + '/v1/workspaces/' + workspace.workspace_id;
+    const url = workspaceUrl(credentials.url, workspace.workspace_id);
 
     try {
         const modified = await submitTrainingToConversation(
@@ -269,6 +294,13 @@ async function updateWorkspace(
 
             // fail, so the user can try again and this time create a new workspace
             throw new Error(ERROR_MESSAGES.MODEL_NOT_FOUND);
+        }
+        else if (isMaintenanceError(err)) {
+            // IBM is doing planned maintenance on the Watson Assistant service.
+            // This isn't something we (or the user) can do anything about, so
+            //  we don't need to notify the Slack bot - just let the user know.
+            log.warn({ err }, 'Watson Assistant service is in maintenance mode');
+            throw new Error(ERROR_MESSAGES.MAINTENANCE);
         }
         else {
             // Otherwise - rethrow it so we can bug out.
@@ -342,7 +374,7 @@ export async function deleteClassifierFromBluemix(
     const req = await createBaseRequest(credentials);
 
     try {
-        const url = credentials.url + '/v1/workspaces/' + classifierId;
+        const url = workspaceUrl(credentials.url, classifierId);
         await request.del(url, req);
     }
     catch (err) {
@@ -602,7 +634,7 @@ async function submitTrainingToConversation(
             workspace_id : body.workspace_id,
             credentialsid : credentials.id,
             status : body.status ? body.status : 'Training',
-            url : credentials.url + '/v1/workspaces/' + body.workspace_id,
+            url : workspaceUrl(credentials.url, body.workspace_id),
         };
 
         return workspace;
@@ -648,7 +680,7 @@ export async function testClassifier(
             },
         };
 
-        const body = await request.post(credentials.url + '/v1/workspaces/' + classifierId + '/message', req, true);
+        const body = await request.post(workspaceUrl(credentials.url, classifierId) + '/message', req, true);
         if (body.intents.length === 0) {
             const project = await store.getProject(projectid);
             if (project) {
@@ -686,7 +718,8 @@ export async function testClassifier(
             throw new Error(ERROR_MESSAGES.TEXT_TOO_LONG);
         }
         if (err.statusCode === httpStatus.SERVICE_UNAVAILABLE ||
-            err.statusCode === httpStatus.BAD_GATEWAY)
+            err.statusCode === httpStatus.BAD_GATEWAY ||
+            err.statusCode === httpStatus.INTERNAL_SERVER_ERROR)
         {
             throw new Error(ERROR_MESSAGES.SERVICE_ERROR);
         }

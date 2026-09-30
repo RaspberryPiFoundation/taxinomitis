@@ -49,7 +49,7 @@ export function watsonAssistantModelCreationFailure(res: Express.Response, err: 
         return res.status(httpstatus.NOT_FOUND)
                   .send({ code : 'MLMOD03', error : err.message + ' Please try again' });
     }
-    else if (err.statusCode === httpstatus.UNAUTHORIZED) {
+    else if (err.statusCode === httpstatus.UNAUTHORIZED || err.statusCode === httpstatus.FORBIDDEN) {
         return res.status(httpstatus.CONFLICT)
                 .send({
                     code : 'MLMOD04',
@@ -64,6 +64,9 @@ export function watsonAssistantModelCreationFailure(res: Express.Response, err: 
                 error : 'No Watson credentials have been set up for training text projects. ' +
                         'Please let your teacher or group leader know.',
             });
+    }
+    else if (err.message === conversation.ERROR_MESSAGES.MAINTENANCE) {
+        return res.status(httpstatus.SERVICE_UNAVAILABLE).send({ code : 'MLMOD11', error : err.message });
     }
     else {
         return unknownError(res, err);
@@ -145,7 +148,7 @@ export function register404Handler(app: Express.Application) {
              res: Express.Response,
              /*next: (e?: Error) => void*/) =>
     {
-        if (common404Urls.includes(req.url)) {
+        if (req.url.endsWith('.php') || common404Urls.includes(req.url)) {
             return notFound(res);
         }
 
@@ -165,4 +168,5 @@ export function register404Handler(app: Express.Application) {
 // 404's from these URLs don't suggest a problem
 const common404Urls = [
     '/.well-known/assetlinks.json',
+    '/.well-known/passkey-endpoints',
 ];

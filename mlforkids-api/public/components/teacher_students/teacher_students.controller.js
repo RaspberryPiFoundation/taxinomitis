@@ -7,10 +7,12 @@
     TeacherStudentsController.$inject = [
         'authService',
         'usersService',
-        '$scope', '$mdDialog', '$document', '$timeout', 'loggerService'
+        'scrollService',
+        'readersService',
+        '$scope', '$mdDialog', 'loggerService'
     ];
 
-    function TeacherStudentsController(authService, usersService, $scope, $mdDialog, $document, $timeout, loggerService) {
+    function TeacherStudentsController(authService, usersService, scrollService, readersService, $scope, $mdDialog, loggerService) {
 
         var vm = this;
         vm.authService = authService;
@@ -46,7 +48,7 @@
         function assumeok() { return true; }
         function handleerr(err) {
             var errId = displayAlert('errors', err.status, err.data);
-            scrollToNewItem('errors' + errId);
+            scrollService.scrollToNewItem('errors' + errId);
         }
 
 
@@ -104,7 +106,7 @@
                         onfail(err);
 
                         var errId = displayAlert('errors', err.status, err.data);
-                        scrollToNewItem('errors' + errId);
+                        scrollService.scrollToNewItem('errors' + errId);
 
                         $scope.busy = false;
                     });
@@ -112,6 +114,7 @@
 
             if (confirmation) {
                 requestConfirmationBeforeFunction(confirmation, runOp, function () {
+                    onfail();
                     $scope.busy = false;
                 });
             }
@@ -167,7 +170,7 @@
                 if (!selections[fromgroup]) {
                     selections[fromgroup] = [];
                 }
-                return true;
+                return selections[fromgroup].length > 0;
             };
 
             var movingStudents = getAndMarkSelectedStudents(fromgroup);
@@ -216,7 +219,7 @@
                 if (!selections[group]) {
                     selections[group] = [];
                 }
-                return true;
+                return selections[group].length > 0;
             };
 
             var movingStudents = getAndMarkSelectedStudents(group);
@@ -288,7 +291,7 @@
 
                 if (studentsToDelete.length !== deletedUserIds.length) {
                     var errId = displayAlert('warnings', 400, { message : 'Not all selected students could be deleted' });
-                    scrollToNewItem('warnings' + errId);
+                    scrollService.scrollToNewItem('warnings' + errId);
                 }
             };
 
@@ -589,7 +592,7 @@
                     var operation = 'creating multiple students';
 
                     var prechecks = function () {
-                        if (vm.groupedStudents[group] && dialogResp.number && dialogResp.number < $scope.MAX_PER_GROUP) {
+                        if (vm.groupedStudents[group] && dialogResp.number && dialogResp.number <= $scope.MAX_PER_GROUP) {
                             for (var i = 1; i <= dialogResp.number; i++) {
                                 var newUserObj = {
                                     id : placeholderId++,
@@ -672,24 +675,29 @@
                         if (files && files.length > 0) {
                             var file = ev.currentTarget.files[0];
 
-                            const txtfilereader = new FileReader();
-                            txtfilereader.readAsText(file);
-                            txtfilereader.onload = function () {
-                                const NEWLINES = /[\r\n]+/;
-                                const INVALID_USERNAME_CHARS = /[^\w.\-_]/g;
-                                const usernames = txtfilereader.result
-                                                    .split(NEWLINES)
-                                                    .map(line => line.trim().substring(0, 15).trim())
-                                                    .filter(line => line.length > 2)
-                                                    .map(line => line.replaceAll(INVALID_USERNAME_CHARS, ''))
-                                                    .reduce((acc, cur) => acc.includes(cur) ? acc : [...acc, cur], []);
-                                $scope.$applyAsync(() => {
-                                    $scope.userstoimport = usernames.slice(0, remaining);
-                                });
-                            };
-                            txtfilereader.onerror = function () {
-                                displayAlert('errors', 500, txtfilereader.error);
-                            };
+                            try {
+                                const txtfilereader = readersService.createFileReader();
+                                txtfilereader.readAsText(file);
+                                txtfilereader.onload = function () {
+                                    const NEWLINES = /[\r\n]+/;
+                                    const INVALID_USERNAME_CHARS = /[^\w.\-_]/g;
+                                    const usernames = txtfilereader.result
+                                                        .split(NEWLINES)
+                                                        .map(line => line.trim().substring(0, 15).trim())
+                                                        .map(line => line.replaceAll(INVALID_USERNAME_CHARS, ''))
+                                                        .filter(line => line.length > 2)
+                                                        .reduce((acc, cur) => acc.includes(cur) ? acc : [...acc, cur], []);
+                                    $scope.$applyAsync(() => {
+                                        $scope.userstoimport = usernames.slice(0, remaining);
+                                    });
+                                };
+                                txtfilereader.onerror = function () {
+                                    displayAlert('errors', 500, txtfilereader.error);
+                                };
+                            }
+                            catch (readerErr) {
+                                displayAlert('errors', 400, readerErr);
+                            }
                         }
                     };
 
@@ -915,7 +923,7 @@
                                 '</div>';
                     }
 
-                    displayCreateErrorMessage(ev, title, '<div style="padding: 1em">' + message + '</div>');
+                    displayCreateErrorMessage(ev, title, '<div class="dialog-error-content">' + message + '</div>');
                 }
                 else if (resp.successes.length > 0) {
                     displayPassword(ev, {
@@ -926,7 +934,7 @@
             }
             else {
                 var errId = displayAlert('errors', 500, { error : 'Unexpected response' });
-                scrollToNewItem('errors' + errId);
+                scrollService.scrollToNewItem('errors' + errId);
             }
         }
 
@@ -939,13 +947,6 @@
                     .ok('OK')
                     .targetEvent(ev)
                 );
-        }
-
-        function scrollToNewItem(itemId) {
-            $timeout(function () {
-                var newItem = document.getElementById(itemId);
-                $document.duScrollToElementAnimated(angular.element(newItem));
-            }, 0);
         }
     }
 }());

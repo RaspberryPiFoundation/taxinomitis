@@ -1,7 +1,7 @@
-/*eslint-env mocha */
+import { describe, it, before, after } from 'node:test';
 import * as assert from 'assert';
 import * as randomstring from 'randomstring';
-import { v4 as uuid } from 'uuid';
+import { randomUUID } from 'node:crypto';
 
 import * as store from '../../lib/db/store';
 import * as dbObjects from '../../lib/db/objects';
@@ -59,13 +59,10 @@ describe('DB credentials pool store', () => {
         });
 
         it('should not retrieve pooled credentials for unmanaged classes', async () => {
-            try {
-                await store.getBluemixCredentialsById(DbTypes.ClassTenantType.UnManaged, credsId);
-                assert.fail('should not have found this');
-            }
-            catch (err) {
-                assert.strictEqual(err.message, 'Unexpected response when retrieving the service credentials');
-            }
+            await assert.rejects(
+                () => store.getBluemixCredentialsById(DbTypes.ClassTenantType.UnManaged, credsId),
+                { message: 'Unexpected response when retrieving the service credentials' }
+            );
         });
 
         it('should retrieved pooled credentials if source is unknown', async () => {
@@ -82,13 +79,10 @@ describe('DB credentials pool store', () => {
         });
 
         it('should handle requests for unknown pooled credentials', async () => {
-            try {
-                await store.getBluemixCredentialsById(DbTypes.ClassTenantType.ManagedPool, 'does not actually exist');
-                assert.fail('should not have found this');
-            }
-            catch (err) {
-                assert.strictEqual(err.message, 'Unexpected response when retrieving service credentials');
-            }
+            await assert.rejects(
+                () => store.getBluemixCredentialsById(DbTypes.ClassTenantType.ManagedPool, 'does not actually exist'),
+                { message: 'Unexpected response when retrieving service credentials' }
+            );
         });
 
         it('should recognize credentials stored in both stores', async () => {
@@ -117,7 +111,7 @@ describe('DB credentials pool store', () => {
         });
 
         it('should handle requests to delete unknown pool credentials', () => {
-            return store.deleteBluemixCredentialsPool(uuid());
+            return store.deleteBluemixCredentialsPool(randomUUID());
         });
 
         it('should delete pooled credentials', async () => {
@@ -135,13 +129,10 @@ describe('DB credentials pool store', () => {
 
             await store.deleteBluemixCredentialsPool(newPoolCreds.id);
 
-            try {
-                await store.getBluemixCredentialsById(DbTypes.ClassTenantType.ManagedPool, newPoolCreds.id);
-                assert.fail('should not have found a deleted creds item');
-            }
-            catch (err) {
-                assert.strictEqual(err.message, 'Unexpected response when retrieving service credentials');
-            }
+            await assert.rejects(
+                () => store.getBluemixCredentialsById(DbTypes.ClassTenantType.ManagedPool, newPoolCreds.id),
+                { message: 'Unexpected response when retrieving service credentials' }
+            );
         });
     });
 });
