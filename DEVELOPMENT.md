@@ -146,4 +146,12 @@ Set `-e ACCOUNTS_ENABLED=false` to disable the accounts system (teacher sign-up,
 
 **Running without accounts:** add `-e ACCOUNTS_ENABLED=false` to the `docker run` command to disable the accounts system (teacher sign-up, student/class management, and Auth0 login) for both the API and the UI, leaving only the anonymous "Try it now" mode. This flag is read at runtime, so you can toggle it by restarting the container.
 
+Without accounts, starting a "Try it now" session needs a [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/) captcha, and the app won't start unless `CLOUDFLARE_TURNSTILE_SITE_KEY` and `CLOUDFLARE_TURNSTILE_SECRET_KEY` are set. For local development, use Cloudflare's [test keys](https://developers.cloudflare.com/turnstile/troubleshooting/testing/), which always pass:
+
+```sh
+  -e ACCOUNTS_ENABLED=false \
+  -e CLOUDFLARE_TURNSTILE_SITE_KEY=1x00000000000000000000AA \
+  -e CLOUDFLARE_TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA \
+```
+
 The website will be running at `http://localhost:3000`.

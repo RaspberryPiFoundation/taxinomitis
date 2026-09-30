@@ -31,6 +31,7 @@ export const SMTP_USER = 'SMTP_USER';
 export const SMTP_PASS = 'SMTP_PASS';
 export const SMTP_REPLY_TO = 'SMTP_REPLY_TO';
 export const CLOUDFLARE_TURNSTILE_SECRET_KEY = 'CLOUDFLARE_TURNSTILE_SECRET_KEY';
+export const CLOUDFLARE_TURNSTILE_SITE_KEY = 'CLOUDFLARE_TURNSTILE_SITE_KEY';
 const MAINTENANCE_MODE = 'MAINTENANCE_MODE';
 const ACCOUNTS_ENABLED = 'ACCOUNTS_ENABLED';
 
@@ -53,12 +54,20 @@ const PROD = [
     // MAINTENANCE_MODE,
 ];
 
+// Without accounts, "Try it now" is the only way to use the site, and starting a session requires a Cloudflare Turnstile (captcha) token
+const NO_ACCOUNTS = [
+    CLOUDFLARE_TURNSTILE_SITE_KEY, CLOUDFLARE_TURNSTILE_SECRET_KEY,
+];
+
 export function confirmRequiredEnvironment() {
     if (deployment.isProdDeployment()) {
         PROD.forEach(checkEnv);
     }
     else {
         DEFAULT.forEach(checkEnv);
+    }
+    if (!accountsEnabled()) {
+        NO_ACCOUNTS.forEach(checkEnv);
     }
 }
 
@@ -83,6 +92,11 @@ function isPostgresEnvVar(env: string): boolean {
 
 export function inMaintenanceMode() {
     return process.env[MAINTENANCE_MODE] === 'true';
+}
+
+// The Cloudflare Turnstile site key used by the front-end, if one has been provided at runtime
+export function getTurnstileSiteKey(): string | undefined {
+    return process.env[CLOUDFLARE_TURNSTILE_SITE_KEY];
 }
 
 // Whether the accounts system (teacher sign-up, student/class management, Auth0 login) is available

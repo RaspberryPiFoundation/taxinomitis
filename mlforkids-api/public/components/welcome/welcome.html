@@ -2,6 +2,11 @@
     <span translate translate-values="{ message: failure.message }">LOGIN.ERROR</span><br/>
     <em ng-if="failure.status >= 500" translate>LOGIN.ERROR_HELP</em>
 </div>
+<div ng-if="turnstileerror" class="alert alert-danger pageheadermsg" role="alert">
+    <strong translate="APP.ERROR"></strong>
+    <span translate translate-values="{ code: turnstileerror }">LOGIN.TURNSTILE_ERROR</span>
+    (<a href="" ng-click="vm.showTurnstileErrorHelp($event)" translate>LOGIN.TURNSTILE_ERROR_MORE</a>)
+</div>
 
 <div class="container welcome">
     <div class="row">
@@ -13,6 +18,7 @@
                     ng-if="!isAuthenticated"
                     ng-hide="inMaintenanceMode"
                     ng-click="vm.getStarted()"
+                    ng-disabled="busy"
                     class="btn btn-primary" translate>WELCOME.GET_STARTED</button>
                 <button
                     ng-if="!isAuthenticated"
@@ -26,6 +32,8 @@
                     ng-if="isAuthenticated"
                     ui-sref="projects"
                     class="btn btn-primary" translate>WELCOME.PROJECT_LABEL</button>
+                <!-- captcha for "Try it now" sessions when accounts are disabled -->
+                <div id="welcome-turnstile-container"></div>
             </div>
         </div>
         <div class="col-md-6">

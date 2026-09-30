@@ -239,10 +239,10 @@ export function setupUI(app: express.Application): void {
 
 /**
  * Reads the built index.html and injects a script that exposes the current
- *  runtime feature-flag values as globals (read by the front-end during
- *  Angular bootstrap). Returns undefined if the file cannot be read or the
- *  expected injection point is missing, so the caller falls back to serving
- *  the static file unmodified
+ *  runtime config values (feature flags and the Turnstile site key) as
+ *  globals (read by the front-end during Angular bootstrap). Returns
+ *  undefined if the file cannot be read or the expected injection point is
+ *  missing, so the caller falls back to serving the static file unmodified
  */
 function buildIndexHtmlWithRuntimeConfig(indexHtmlFile: string): string | undefined {
     let html: string;
@@ -253,9 +253,15 @@ function buildIndexHtmlWithRuntimeConfig(indexHtmlFile: string): string | undefi
         return undefined;
     }
 
-    const runtimeConfigScript = '<script>window.ACCOUNTS_ENABLED = ' +
-                                    env.accountsEnabled() +
-                                ';</script>';
+    let runtimeConfig = 'window.ACCOUNTS_ENABLED = ' + env.accountsEnabled() + ';';
+
+    // Cloudflare Turnstile (captcha) key needed to start "Try it now" sessions - front-end builds for deployments other than machinelearningforkids.co.uk don't include one
+    const turnstileSiteKey = env.getTurnstileSiteKey();
+    if (turnstileSiteKey) {
+        runtimeConfig += 'window.TURNSTILE_SITE_KEY = ' + JSON.stringify(turnstileSiteKey).replace(/</g, '\\u003c') + ';';
+    }
+
+    const runtimeConfigScript = '<script>' + runtimeConfig + '</script>';
 
     if (html.indexOf('</head>') === -1) {
         return undefined;

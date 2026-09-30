@@ -122,12 +122,17 @@ Do these steps before the first deploy. Until the database schema is loaded (ste
 
    The script's `ALTER DATABASE mlforkidsdb ...` statement will fail, because Heroku names the database differently. That's expected, because the app sets the schema search path on each connection instead. Let the script carry on past the error, because the statements after it create the `session-users` class that "Try it now" needs. That means not running it with `ON_ERROR_STOP` set.
 
-4. Set the [config vars](#config-vars):
+4. Create a [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/) widget. Starting a "Try it now" session needs a Turnstile (captcha) token, and with accounts off that's the only way into the site. Add every hostname the site is served from to the widget. You'll need its site key and secret key for the next step.
+
+5. Set the [config vars](#config-vars):
    ```sh
-   heroku config:set ACCOUNTS_ENABLED=false NODE_ENV=production -a your-app-name
+   heroku config:set ACCOUNTS_ENABLED=false NODE_ENV=production \
+     CLOUDFLARE_TURNSTILE_SITE_KEY=your-site-key \
+     CLOUDFLARE_TURNSTILE_SECRET_KEY=your-secret-key \
+     -a your-app-name
    ```
 
-5. Add the [scheduled cleanup job](#scheduled-cleanup-job).
+6. Add the [scheduled cleanup job](#scheduled-cleanup-job).
 
 If the app was deployed before the schema was loaded, restart it afterwards with `heroku restart -a your-app-name`.
 
@@ -140,6 +145,8 @@ After this, deploys go through the pipeline's GitHub integration, either automat
 | `DATABASE_URL` | Set by Heroku Postgres | Replaces the individual `POSTGRESQL*` variables. |
 | `ACCOUNTS_ENABLED` | `false` | Turns off teacher sign-up, student and class management, and Auth0 login, in both the API and the UI, and hides the option to store projects in the cloud. Only anonymous "Try it now" sessions remain. |
 | `NODE_ENV` | `production` | Sends the app's logs to stdout and stderr, so they show up in `heroku logs`. Without it, the logs are written to a file inside the dyno. |
+| `CLOUDFLARE_TURNSTILE_SITE_KEY` | Your Turnstile widget's site key | Passed to the front-end at runtime for the captcha shown when a "Try it now" session starts. Required when `ACCOUNTS_ENABLED=false`: the app won't start without it. |
+| `CLOUDFLARE_TURNSTILE_SECRET_KEY` | Your Turnstile widget's secret key | Used by the API to check the captcha before starting a session. Required when `ACCOUNTS_ENABLED=false`. |
 
 You don't need to set `PORT` (Heroku sets it) or `HOST` (it defaults to `0.0.0.0`). You don't need any Auth0, SMTP or IBM Cloud config either.
 
