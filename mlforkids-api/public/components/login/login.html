@@ -9,6 +9,11 @@
     <span translate translate-values="{ message: failure.message }">LOGIN.ERROR</span><br/>
     <em ng-if="failure.status >= 500" translate>LOGIN.ERROR_HELP</em>
 </div>
+<div ng-if="turnstileerror" class="alert alert-danger pageheadermsg" role="alert">
+    <strong translate="APP.ERROR"></strong>
+    <span translate translate-values="{ code: turnstileerror }">LOGIN.TURNSTILE_ERROR</span>
+    (<a href="" ng-click="vm.showTurnstileErrorHelp($event)" translate>LOGIN.TURNSTILE_ERROR_MORE</a>)
+</div>
 
 
 <div ng-if="!isAuthenticated" class="loginPage"
@@ -37,14 +42,15 @@
             <label>
                 {{ "LOGIN.TRY_TITLE" | translate }}
                 <md-button class="md-icon-button test-tooltip">
-                    <md-tooltip md-direction="bottom" class="tooltipBody" style="max-width: 330px;">
+                    <md-tooltip md-direction="bottom" class="tooltipBody">
                         {{ "LOGIN.TRY_NOW_EXPLANATION" | translate }}
                     </md-tooltip>
                     <span class="glyphicon glyphicon-question-sign"></span>
                 </md-button>
             </label>
-            <button class="btn btn-primary login-button" ng-click="vm.startTryItNowSession()" translate>LOGIN.TRY_NOW</button>
+            <button class="btn btn-primary login-button" ng-click="vm.startTryItNowSession()" ng-disabled="busy" translate>LOGIN.TRY_NOW</button>
         </div>
+        <div id="tryitnow-turnstile-container"></div>
     </div>
 
 

@@ -25,6 +25,7 @@
                 teacher_students : true,
                 teacher_supervision : true,
                 teacher_review_training : true,
+                teacher_language_models : true,
                 siteadmin : true
             };
             $transitions.onBefore({}, function (transition) {

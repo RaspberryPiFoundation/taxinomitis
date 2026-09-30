@@ -6,10 +6,11 @@
 
         ModelDescribeController.$inject = [
             'authService', 'loggerService', 'browserStorageService', 'projectsService',
-            '$stateParams', '$scope', '$timeout', '$interval', '$document'
+            'scrollService',
+            '$stateParams', '$scope', '$timeout', '$interval'
         ];
 
-    function ModelDescribeController(authService, loggerService, browserStorageService, projectsService, $stateParams, $scope, $timeout, $interval, $document) {
+    function ModelDescribeController(authService, loggerService, browserStorageService, projectsService, scrollService, $stateParams, $scope, $timeout, $interval) {
         var vm = this;
         vm.authService = authService;
 
@@ -47,13 +48,6 @@
             vm[type].push(newAlert);
 
             return newId;
-        }
-
-        function scrollToNewItem(itemId) {
-            $timeout(function () {
-                var newItem = document.getElementById(itemId);
-                $document.duScrollToElementAnimated(angular.element(newItem));
-            }, 0);
         }
 
         function getAssetAsJson(key) {
@@ -99,8 +93,17 @@
                 $scope.project.fields = fields;
             })
             .catch(function (err) {
-                var errId = displayAlert('errors', err.status, err.data);
-                scrollToNewItem('errors' + errId);
+                var errId;
+                if (err && err.status === 404 && $scope.project) {
+                    errId = displayAlert('warnings', 400, {
+                        message : 'Model information is not available. Try training a new model.'
+                    });
+                    scrollService.scrollToNewItem('warnings' + errId);
+                }
+                else {
+                    errId = displayAlert('errors', err.status, err.data || err);
+                    scrollService.scrollToNewItem('errors' + errId);
+                }
                 $scope.loading = false;
             });
 

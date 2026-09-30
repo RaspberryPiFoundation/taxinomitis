@@ -18,11 +18,19 @@ Mustache.templateCache = undefined;
 
 const ROOT_URL = process.env[env.AUTH0_CALLBACK_URL];
 
-function escapeProjectName(name: string): string {
+export function escapeProjectName(name: string): string {
     // Scratch 3 needs HTML encoding (e.g. '&lt;') as special
     //  characters (e.g. '<') will prevent extensions from
     //  loading
+    //
+    // The result is embedded unescaped into a single-quoted JS string
+    //  literal (name: '{{{ projectname }}}',) in the generated extension
+    //  file, so backslashes MUST be escaped before quotes - escaping a
+    //  quote to \' while leaving a preceding backslash alone lets that
+    //  backslash cancel out the escape, ending the string literal early
+    //  and injecting whatever follows as executable code
     return name.replace(/[&<>"]/g, ' ')
+               .replace(/\\/g, '\\\\')
                .replace(/[']/g, '\\\'');
 }
 
@@ -301,11 +309,28 @@ async function getRegressionExtensionLocalData(projectid: string, projectname: s
 
 
 
+// models that support tool calling
+//
+// copied from functionCallingModelIds in web-llm (src/config.ts)
+//
+// should correspond with toolsupport flags in
+//  public/components/languagemodel/languagemodel.service.js
+const TOOL_SUPPORTING_MODELS: string[] = [
+    'Hermes-2-Pro-Llama-3-8B-q4f16_1-MLC',
+    'Hermes-2-Pro-Llama-3-8B-q4f32_1-MLC',
+    'Hermes-2-Pro-Mistral-7B-q4f16_1-MLC',
+    'Hermes-3-Llama-3.1-8B-q4f32_1-MLC',
+    'Hermes-3-Llama-3.1-8B-q4f16_1-MLC',
+];
+
 export async function getSmallLanguageModelExtension(modelid: string, contextwindow: number): Promise<string>
 {
     const template: string = await fileutils.read('./resources/scratch3-language.js');
     Mustache.parse(template);
-    return Mustache.render(template, { modelid, contextwindow });
+    return Mustache.render(template, {
+        modelid, contextwindow,
+        includeTools : TOOL_SUPPORTING_MODELS.includes(modelid),
+    });
 }
 
 

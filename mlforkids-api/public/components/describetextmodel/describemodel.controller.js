@@ -6,10 +6,11 @@
 
         ModelTextDescribeController.$inject = [
             'authService', 'projectsService', 'trainingService', 'fcnnVisualisationService', 'loggerService', 'utilService',
-            '$stateParams', '$scope', '$timeout', '$interval', '$document'
+            'scrollService',
+            '$stateParams', '$scope', '$timeout', '$interval'
         ];
 
-    function ModelTextDescribeController(authService, projectsService, trainingService, fcnnVisualisationService, loggerService, utilService, $stateParams, $scope, $timeout, $interval, $document) {
+    function ModelTextDescribeController(authService, projectsService, trainingService, fcnnVisualisationService, loggerService, utilService, scrollService, $stateParams, $scope, $timeout, $interval) {
         var vm = this;
         vm.authService = authService;
 
@@ -47,12 +48,9 @@
             return newId;
         }
 
-        function scrollToNewItem(itemId) {
-            $timeout(function () {
-                var newItem = document.getElementById(itemId);
-                $document.duScrollToElementAnimated(angular.element(newItem));
-            }, 0);
-        }
+        // thrown internally when there is no trained model to describe yet,
+        // so the catch handler can tell it apart from a real request failure
+        var NO_MODEL_AVAILABLE = {};
 
         utilService.loadScript('/static/bower_components/d3/d3.min.js')
             .then(function () {
@@ -72,13 +70,12 @@
             })
             .then(function (models) {
                 loggerService.debug('[ml4kdesc] models', models);
-                if (models && models.length > 0 && (models[0].status === 'Available') || (models[0].status === 'Training')) {
+                if (models && models.length > 0 &&
+                    (models[0].status === 'Available' || models[0].status === 'Training')) {
                     return trainingService.getModel($scope.project.id, $scope.userId, vm.profile.tenant, $scope.modelId, models[0].updated);
                 }
                 else {
-                    var errId = displayAlert('errors', 400, { message : 'Model not ready to be described' });
-                    scrollToNewItem('errors' + errId);
-                    $scope.loading = false;
+                    throw NO_MODEL_AVAILABLE;
                 }
             })
             .then(function (modelinfo) {
@@ -89,8 +86,21 @@
                 initializeVisualisation();
             })
             .catch(function (err) {
-                var errId = displayAlert('errors', err.status, err.data);
-                scrollToNewItem('errors' + errId);
+                var errId;
+                if (err === NO_MODEL_AVAILABLE) {
+                    errId = displayAlert('warnings', 400, { message : 'Model not ready to be described' });
+                    scrollService.scrollToNewItem('warnings' + errId);
+                }
+                else if (err && err.status === 404 && $scope.project) {
+                    errId = displayAlert('warnings', 400, {
+                        message : 'Model information is not available. Try training a new model.'
+                    });
+                    scrollService.scrollToNewItem('warnings' + errId);
+                }
+                else {
+                    errId = displayAlert('errors', err.status, err.data || err);
+                    scrollService.scrollToNewItem('errors' + errId);
+                }
                 $scope.loading = false;
             });
 
@@ -286,6 +296,10 @@
             }
             if (vm.wizardPage === 5) {
                 redrawNeuralNetworkDiagram(ARCHITECTURES.BAG_OF_WORDS);
+                displayTrainingExampleInput();
+            }
+            if (vm.wizardPage === 6) {
+                redrawNeuralNetworkDiagram(ARCHITECTURES.FEATURE_SELECTION);
                 displayTrainingExampleInput();
             }
             if (vm.wizardPage === 8) {
@@ -678,7 +692,7 @@
             var working = "<table>";
             if (includes.bias) {
                 working += ("<tr><td>" + BIAS[targetId] + "</td><td></td><td></td><td></td><td>+</td></tr>");
-                working += ("<tr><td colspan=5 style='font-size: 0.2em;'> &nbsp; </td></tr>");
+                working += ("<tr><td colspan=5 class='nn-table-spacer-small'> &nbsp; </td></tr>");
             }
             for (var i = 0; i < numInputNodes; i++) {
                 var tablerow = "<tr>";
@@ -693,7 +707,7 @@
                 working += tablerow;
             }
             if (includes.finalvalue) {
-                working += ("<tr><td colspan=5 style='font-size: 0.25em;'> &nbsp; </td></tr>");
+                working += ("<tr><td colspan=5 class='nn-table-spacer-medium'> &nbsp; </td></tr>");
                 working += ("<tr><td colspan=5> = " + values[targetId].value + "</td></tr>");
             }
             working += "</table>";

@@ -16,10 +16,9 @@ export const CSP_DIRECTIVES: Record<string, string[]> = {
         'https://cdn.eu.auth0.com',
     ],
     styleSrc: ["'self'",
-        // TODO : https://github.com/IBM/taxinomitis/issues/346 should remove this
-        "'unsafe-inline'",
-        // used by in-browser page translations
-        'https://www.gstatic.com',
+        // Angular UI Router adds empty style="" attribute to ui-view elements
+        // This hash allows only empty inline styles (sha256 of empty string)
+        "'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='",
     ],
     scriptSrc: ["'self'", 'blob:',
         // TODO : https://github.com/IBM/taxinomitis/issues/346 should remove this
@@ -66,6 +65,8 @@ export const CSP_DIRECTIVES: Record<string, string[]> = {
         // used for small language models
         'https://esm.run',
         'https://cdn.jsdelivr.net',
+        // used for CloudFlare Turnstile (captcha)
+        'https://challenges.cloudflare.com',
         // useful when running locally
         'https://machinelearningforkids.co.uk',
     ],
@@ -77,6 +78,8 @@ export const CSP_DIRECTIVES: Record<string, string[]> = {
         // used in the About and Worksheets tabs
         'https://www.youtube.com',
         'https://www.youtube-nocookie.com',
+        // used for CloudFlare Turnstile (captcha)
+        'https://challenges.cloudflare.com',
     ],
     imgSrc: ["'self'",
         // used for auth
@@ -96,8 +99,6 @@ export const CSP_DIRECTIVES: Record<string, string[]> = {
     fontSrc: ["'self'",
         // used in Scratch by Blockly
         'data:',
-        // used by in-browser page translations
-        'https://fonts.gstatic.com',
     ],
     connectSrc: ["'self'",
         // used for accessing cached APIs
@@ -110,11 +111,18 @@ export const CSP_DIRECTIVES: Record<string, string[]> = {
         'https://huggingface.co',
         'https://cas-bridge.xethub.hf.co',
         'https://raw.githubusercontent.com',
+        // used for accessing iTunes from Scratch
+        'https://itunes.apple.com',
+        'https://audio-ssl.itunes.apple.com',
         // useful when running locally
         'https://machinelearningforkids.co.uk',
-        // used by in-browser page translations
-        'https://translate.googleapis.com',
+        // used for CloudFlare Turnstile (captcha)
+        'https://challenges.cloudflare.com',
     ].concat(env.getNumbersServiceHostUrls()), // used for numbers service
+    trustedTypes: [
+        // used by Auth0
+        'dompurify',
+    ],
 };
 
 if (process.env.AUTH0_CUSTOM_DOMAIN) {
@@ -126,12 +134,27 @@ if (process.env.AUTH0_CUSTOM_DOMAIN) {
 if (deployment.isProdDeployment() && process.env.SENTRY_CSP_REPORT_URI) {
     CSP_DIRECTIVES.reportUri = [ process.env.SENTRY_CSP_REPORT_URI ];
 }
+if (deployment.isProdDeployment() && process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY) {
+    CSP_DIRECTIVES.trustedTypes.push('challenges.cloudflare.com');
+}
 
 
 function removeFrameBlockingHeaders(req: express.Request, res: express.Response, next: express.NextFunction): void {
     res.removeHeader('x-frame-options');
     next();
 }
+
+
+function redirectToScratch(req: express.Request, res: express.Response): void {
+    if (req.query.project) {
+        // keep the URL to an sb3 file if provided
+        res.redirect('/scratch/?project=' + req.query.project);
+    }
+    else {
+        res.redirect('/scratch/');
+    }
+}
+
 
 
 export function setupUI(app: express.Application): void {
@@ -162,6 +185,7 @@ export function setupUI(app: express.Application): void {
     app.get('/about', (req, res) => { res.redirect('/#!/about'); });
     app.get('/projects', (req, res) => { res.redirect('/#!/projects'); });
     app.get('/teacher', (req, res) => { res.redirect('/#!/teacher'); });
+    app.get('/teacher/languagemodels', (req, res) => { res.redirect('/#!/teacher/languagemodels'); });    
     app.get('/worksheets', (req, res) => { res.redirect('/#!/worksheets'); });
     app.get('/help', (req, res) => { res.redirect('/#!/help'); });
     app.get('/signup', (req, res) => { res.redirect('/#!/signup'); });
@@ -170,8 +194,8 @@ export function setupUI(app: express.Application): void {
     app.get('/pretrained', (req, res) => { res.redirect('/#!/pretrained'); });
     app.get('/book', (req, res) => { res.redirect('/#!/book'); });
 
-    app.get('/scratch', (req, res) => { res.redirect('/scratch/'); });
-    app.get('/scratch3', (req, res) => { res.redirect('/scratch/'); });
+    app.get('/scratch', redirectToScratch);
+    app.get('/scratch3', redirectToScratch);
 
     const stories = [
         'ml-hasnt-replaced-coding',

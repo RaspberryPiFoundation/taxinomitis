@@ -20,42 +20,7 @@
         }
 
 
-        function parseUrl(url) {
-            var result = {};
-            url.split('&').forEach(function(part) {
-                if (!part) {
-                    return;
-                }
-
-                part = part.split('+').join(' ');
-
-                var eq = part.indexOf('=');
-                var key = eq > -1 ? part.substring(0, eq) : part;
-                var val = eq > -1 ? decodeURIComponent(part.substring(eq + 1)) : '';
-
-                var from = key.indexOf('[');
-                if (from === -1) {
-                    result[decodeURIComponent(key)] = val;
-                }
-                else {
-                    var to = key.indexOf(']', from);
-                    var index = decodeURIComponent(key.substring(from + 1, to));
-                    key = decodeURIComponent(key.substring(0, from));
-
-                    if (!result[key]) {
-                        result[key] = [];
-                    }
-
-                    if (!index) {
-                        result[key].push(val);
-                    }
-                    else {
-                        result[key][index] = val;
-                    }
-                }
-            });
-            return result;
-        }
+        var parseUrl = mlImageLoaderParseUrl;
 
         function parseHTML(str) {
             var tmp = document.implementation.createHTMLDocument('title');
@@ -65,14 +30,14 @@
 
 
         // is it an image search result from Google?
-        var GOOG_IMG_REGEX = /^https:\/\/www\.google\.co[a-z.]+\/imgres\?(imgurl=.*)/;
+        var GOOG_IMG_REGEX = mlImageLoaderPatterns.GOOG_IMG_REGEX;
 
         // is it an image search result from Baidu?
-        var BAIDU_IMG_REGEX = /^https:\/\/timgsa.baidu.com\/timg\?.*/;
-        var BAIDU_IMG_SRCH_REGEX = /^https:\/\/images?.baidu.com\/search\/detail.*/;
+        var BAIDU_IMG_REGEX = mlImageLoaderPatterns.BAIDU_IMG_REGEX;
+        var BAIDU_IMG_SRCH_REGEX = mlImageLoaderPatterns.BAIDU_IMG_SRCH_REGEX;
 
         // is it a URL ending with .png or .jpg ?
-        var IMG_URL_REGEX = /^https?:\/\/[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)(\.jpg|\.png)\??.*$/;
+        var IMG_URL_REGEX = mlImageLoaderPatterns.IMG_URL_REGEX;
 
         function getType(types, type) {
             if (types && types.indexOf && types.indexOf(type) !== -1) {

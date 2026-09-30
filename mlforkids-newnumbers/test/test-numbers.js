@@ -1,8 +1,8 @@
-const request = require('request-promise');
 const assert = require('assert');
 const uuid = require('uuid').v4;
 const fs = require('fs');
-const { DOMParser } = require('xmldom');
+const path = require('path');
+const { DOMParser } = require('@xmldom/xmldom');
 let ydf;
 require('ydf-inference')()
     .then((mod) => {
@@ -29,10 +29,88 @@ const TITANIC  = './data/titanic.csv';
 const POKEMON  = './data/pokemon.csv';
 const PHISHING = './data/phishing.csv';
 const SINGLECLASS  = './data/singleclass.csv';
+const NUMERIC_LABELS = './data/numeric-labels.csv';
+const MISSING_VALUE_LABELS = './data/missing-value-labels.csv';
 const INVALID = './package.json';
 
 
 const xmlParser = new DOMParser();
+
+
+//    json:true            - send Accept: application/json and parse the response body
+//    gzip:true            - no-op (fetch negotiates and decompresses automatically)
+//    auth:{user,pass}     - HTTP Basic auth header
+//    formData:{ field : string
+//               | fs.ReadStream
+//               | { value, options : { filename, contentType } } }  - multipart body
+//    encoding:null        - resolve with a Buffer instead of a parsed/text body
+//  On a non-2xx response it rejects with an error carrying { statusCode,
+//  response : { body } }, matching what the tests expected from request-promise.
+function apiRequest(method, url, options) {
+    const opts = options || {};
+    const headers = {};
+    const init = { method, headers };
+
+    if (opts.auth) {
+        headers.Authorization = 'Basic ' +
+            Buffer.from(opts.auth.user + ':' + opts.auth.pass).toString('base64');
+    }
+    if (opts.json) {
+        headers.Accept = 'application/json';
+    }
+    if (opts.formData) {
+        const form = new FormData();
+        for (const [ field, value ] of Object.entries(opts.formData)) {
+            if (value && typeof value.pipe === 'function' && value.path) {
+                // an fs.createReadStream(...)
+                form.append(field,
+                            new Blob([ fs.readFileSync(value.path) ]),
+                            path.basename(value.path));
+            }
+            else if (value && typeof value === 'object' && 'value' in value) {
+                // request's verbose form: { value, options : { filename, contentType } }
+                const fileOpts = value.options || {};
+                form.append(field,
+                            new Blob([ value.value ], { type : fileOpts.contentType }),
+                            fileOpts.filename);
+            }
+            else {
+                form.append(field, value);
+            }
+        }
+        init.body = form;
+    }
+
+    return fetch(url, init).then((res) => {
+        const contentType = res.headers.get('content-type') || '';
+        const wantsJson = opts.json || contentType.includes('application/json');
+
+        let bodyPromise;
+        if (opts.encoding === null) {
+            bodyPromise = res.arrayBuffer().then((buf) => Buffer.from(buf));
+        }
+        else if (wantsJson) {
+            bodyPromise = res.text().then((text) => (text ? JSON.parse(text) : undefined));
+        }
+        else {
+            bodyPromise = res.text();
+        }
+
+        return bodyPromise.then((body) => {
+            if (!res.ok) {
+                const err = new Error('Request failed with status code ' + res.status);
+                err.statusCode = res.status;
+                err.response = { body };
+                throw err;
+            }
+            return body;
+        });
+    });
+}
+
+const request = (url, options) => apiRequest('GET', url, options);
+request.get = (url, options) => apiRequest('GET', url, options);
+request.post = (url, options) => apiRequest('POST', url, options);
 
 
 
@@ -439,7 +517,7 @@ describe('verify new number service API', () => {
                             "name": "ticket_class"
                         },
                         "gender": {
-                            "type": "object",
+                            "type": "str",
                             "name": "gender"
                         },
                         "age": {
@@ -459,11 +537,11 @@ describe('verify new number service API', () => {
                             "name": "ticket_fare"
                         },
                         "embarked": {
-                            "type": "object",
+                            "type": "str",
                             "name": "embarked"
                         },
                         "mlforkids_outcome_label": {
-                            "type": "object",
+                            "type": "str",
                             "name": "mlforkids_outcome_label"
                         }
                     });
@@ -488,39 +566,39 @@ describe('verify new number service API', () => {
                     assert.deepStrictEqual(modelinfo.labels, [ 'phishing', 'safe' ]);
                     assert.deepStrictEqual(modelinfo.features, {
                         "address type": {
-                            "type": "object",
+                            "type": "str",
                             "name": "address_type"
                         },
                         "url length": {
-                            "type": "object",
+                            "type": "str",
                             "name": "url_length"
                         },
                         "shortening": {
-                            "type": "object",
+                            "type": "str",
                             "name": "shortening"
                         },
                         "includes @": {
-                            "type": "object",
+                            "type": "str",
                             "name": "includes__"
                         },
                         "port number": {
-                            "type": "object",
+                            "type": "str",
                             "name": "port_number"
                         },
                         "domain age": {
-                            "type": "object",
+                            "type": "str",
                             "name": "domain_age"
                         },
                         "redirects": {
-                            "type": "object",
+                            "type": "str",
                             "name": "redirects"
                         },
                         "domain reg": {
-                            "type": "object",
+                            "type": "str",
                             "name": "domain_reg"
                         },
                         "mlforkids_outcome_label": {
-                            "type": "object",
+                            "type": "str",
                             "name": "mlforkids_outcome_label"
                         }
                     });
@@ -575,13 +653,88 @@ describe('verify new number service API', () => {
                             "name": "capture_rate"
                         },
                         "mlforkids_outcome_label": {
-                            "type": "object",
+                            "type": "str",
                             "name": "mlforkids_outcome_label"
                         }
                     });
                 });
         });
 
+        it('should handle numeric labels and convert them to strings', () => {
+            const key = newScratchKey();
+            const trainingRequest = {
+                ...DEFAULT_REQUEST,
+                ...DEV_CREDENTIALS,
+                formData : {
+                    csvfile : fs.createReadStream(NUMERIC_LABELS)
+                },
+            };
+            let modelUrl;
+
+            return request.post(NEW_MODEL_API + key, trainingRequest)
+                .then((resp) => {
+                    modelUrl = resp.urls.model;
+                    return waitForModel(resp.urls.status);
+                })
+                .then((modelinfo) => {
+                    // Verify labels are strings, not numbers
+                    assert.deepStrictEqual(modelinfo.labels, [ '1', '2', '3', '4', '5' ]);
+                    assert.strictEqual(typeof modelinfo.labels[0], 'string');
+                    assert.strictEqual(typeof modelinfo.labels[1], 'string');
+
+                    // Verify feature types
+                    assert.deepStrictEqual(modelinfo.features, {
+                        "100": {
+                            "type": "int64",
+                            "name": "100"
+                        },
+                        "200": {
+                            "type": "int64",
+                            "name": "200"
+                        },
+                        "300": {
+                            "type": "int64",
+                            "name": "300"
+                        },
+                        "mlforkids_outcome_label": {
+                            "type": "str",
+                            "name": "mlforkids_outcome_label"
+                        }
+                    });
+
+                    // Download and test the model
+                    return request.get(modelUrl, { encoding : null });
+                })
+                .then((resp) => {
+                    return ydf.loadModelFromZipBlob(resp);
+                })
+                .then((model) => {
+                    // Verify model structure
+                    assert.deepStrictEqual(model.inputFeatures, [
+                        { name : '100', type : 'NUMERICAL', internalIdx : 0, specIdx : 1 },
+                        { name : '200', type : 'NUMERICAL', internalIdx : 1, specIdx : 2 },
+                        { name : '300', type : 'NUMERICAL', internalIdx : 2, specIdx : 3 },
+                    ]);
+
+                    // Verify label classes are strings (mapped to indices)
+                    assert.deepStrictEqual(model.labelClasses, [ '0', '1', '2', '3', '4' ]);
+
+                    // Test prediction with sample data
+                    const predictions = model.predict({
+                        '100' : [ 689, 894, 1035 ],
+                        '200' : [ 43,  69,  15 ],
+                        '300' : [ 524, 278, 254 ]
+                    });
+
+                    // verify predictions return valid probabilities
+                    assert.strictEqual(predictions.length, 15);
+                    predictions.forEach(pred => {
+                        assert(pred >= 0 && pred <= 1, 'Prediction should be a probability between 0 and 1');
+                    });
+
+                    model.unload();
+                });
+        });
     });
 
 
@@ -739,6 +892,169 @@ describe('verify new number service API', () => {
                     assert(pokemonConfidence[3] < 0.12);
                     assert(pokemonConfidence[4] < 0.12);
                     assert(pokemonConfidence[5] < 0.12);
+
+                    model.unload();
+                });
+        });
+    });
+
+
+
+    // Some of the values that children use as labels (or as choices in a
+    //  multi-choice field) are values that mean "missing data" to pandas -
+    //  the most common being "None". If they are treated as missing values,
+    //  the training data is corrupted, model training fails, and the status
+    //  is written to file with a NaN in it - which means the web page can't
+    //  even parse the status to display the error.
+    describe('labels that look like missing values', () => {
+
+        function trainMissingValueLabelsModel() {
+            const key = newScratchKey();
+            const trainingRequest = {
+                ...DEFAULT_REQUEST,
+                ...DEV_CREDENTIALS,
+                formData : {
+                    csvfile : fs.createReadStream(MISSING_VALUE_LABELS)
+                },
+            };
+            return request.post(NEW_MODEL_API + key, trainingRequest);
+        }
+
+        it('should train a model where a label means missing data', () => {
+            let statusUrl;
+
+            return trainMissingValueLabelsModel()
+                .then((resp) => {
+                    statusUrl = resp.urls.status;
+                    return waitForModel(statusUrl);
+                })
+                .then((modelinfo) => {
+                    assert.strictEqual(modelinfo.status, 'Available');
+
+                    // "None" should be kept as the name of a class, not
+                    //  turned into a missing value
+                    assert.deepStrictEqual(modelinfo.labels, [ 'None', 'Left', 'Right' ]);
+
+                    // "None" should also be usable as a value in a field
+                    assert.deepStrictEqual(modelinfo.features, {
+                        'speed' : {
+                            'type' : 'float64',
+                            'name' : 'speed'
+                        },
+                        'power up?' : {
+                            'type' : 'str',
+                            'name' : 'power_up_'
+                        },
+                        'distance' : {
+                            'type' : 'float64',
+                            'name' : 'distance'
+                        },
+                        'mlforkids_outcome_label' : {
+                            'type' : 'str',
+                            'name' : 'mlforkids_outcome_label'
+                        }
+                    });
+                });
+        });
+
+        it('should write a status that web pages can parse', () => {
+            let statusUrl;
+
+            return trainMissingValueLabelsModel()
+                .then((resp) => {
+                    statusUrl = resp.urls.status;
+                    return waitForModel(statusUrl);
+                })
+                .then(() => {
+                    // deliberately not using the json option, so that we
+                    //  can verify the raw contents of the status file
+                    return request.get(statusUrl);
+                })
+                .then((resp) => {
+                    assert.strictEqual(typeof resp, 'string');
+
+                    let status;
+                    try {
+                        status = JSON.parse(resp);
+                    }
+                    catch (err) {
+                        assert.fail('status should be valid JSON : ' + err.message);
+                    }
+                    assert.strictEqual(status.status, 'Available');
+                    assert.deepStrictEqual(status.labels, [ 'None', 'Left', 'Right' ]);
+                });
+        });
+
+        it('should create a visualisation where a label means missing data', () => {
+            let treeUrl, dotUrl, vocabUrl;
+
+            return trainMissingValueLabelsModel()
+                .then((resp) => {
+                    treeUrl = resp.urls.tree;
+                    dotUrl = resp.urls.dot;
+                    vocabUrl = resp.urls.vocab;
+                    return waitForModel(resp.urls.status);
+                })
+                .then(() => {
+                    return request.get(treeUrl);
+                })
+                .then((resp) => {
+                    xmlParser.parseFromString(resp, 'text/xml');
+
+                    return request.get(dotUrl);
+                })
+                .then((resp) => {
+                    assert(resp.startsWith('digraph Tree {'));
+
+                    return request.get(vocabUrl, { json : true });
+                })
+                .then((resp) => {
+                    assert.deepStrictEqual(resp.sort(), [
+                        'distance',
+                        'power up?=None',
+                        'power up?=Yes',
+                        'speed',
+                    ]);
+                });
+        });
+
+        it('should download a model where a label means missing data', () => {
+            let modelUrl;
+
+            return trainMissingValueLabelsModel()
+                .then((resp) => {
+                    modelUrl = resp.urls.model;
+                    return waitForModel(resp.urls.status);
+                })
+                .then(() => {
+                    return request.get(modelUrl, { encoding : null });
+                })
+                .then((resp) => {
+                    return ydf.loadModelFromZipBlob(resp);
+                })
+                .then((model) => {
+                    assert.deepStrictEqual(model.inputFeatures, [
+                        { name : 'speed',     type : 'NUMERICAL',   internalIdx : 0, specIdx : 1 },
+                        { name : 'power_up_', type : 'CATEGORICAL', internalIdx : 1, specIdx : 2 },
+                        { name : 'distance',  type : 'NUMERICAL',   internalIdx : 2, specIdx : 3 },
+                    ]);
+                    assert.deepStrictEqual(model.labelClasses, [ '0', '1', '2' ]);
+
+                    // labels are [ 'None', 'Left', 'Right' ] so the
+                    //  confidences are returned in that order
+                    const confidences = model.predict({
+                        speed :     [ 12,   12,  12 ],
+                        power_up_ : [ 'None', 'Yes', 'Yes' ],
+                        distance :  [ 0,   -40,  40 ]
+                    });
+                    assert.strictEqual(confidences.length, 9);
+
+                    // should be "None"
+                    assert(confidences[0] > 0.5);
+                    // should be "Left"
+                    assert(confidences[4] > 0.5);
+                    // should be "Right"
+                    assert(confidences[8] > 0.5);
 
                     model.unload();
                 });
