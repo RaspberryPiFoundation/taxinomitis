@@ -1286,6 +1286,7 @@
                     maketypes : [ 'scratch3' ],
                     image : 'static/images/project-safekeeper.png',
                     tags : [ 'language models', 'LLM' ],
+                    teachersnotes : 'https://dalelane.co.uk/blog/?p=6199',
                     downloads : [
                         {
                             worksheet : 'https://github.com/IBM/taxinomitis-docs/raw/master/project-worksheets/pdf/worksheet-secretkeeper.pdf'
