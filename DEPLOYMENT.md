@@ -182,10 +182,7 @@ Run the job every hour with [Heroku Scheduler](https://devcenter.heroku.com/arti
    npm run codeenginejob
    ```
 
-Each deleted session also queues a request to delete its files from object storage. Those requests can never run here where object storage is not available, so they build up in the `pendingjobs` table at one row per session. Nothing is ever written to object storage in this deployment, so they're safe to clear:
-```sh
-heroku pg:psql -a your-app-name -c "DELETE FROM mlforkidsdb.pendingjobs;"
-```
+Each deleted session also queues a request to delete its files from object storage, in the `pendingjobs` table. Without object storage, the job drops these requests on its next run.
 
 ### Numbers service
 

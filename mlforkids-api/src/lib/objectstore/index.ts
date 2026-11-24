@@ -78,6 +78,10 @@ export function init(): void {
     }
 }
 
+export function isConfigured(): boolean {
+    return !!(cos && BUCKET);
+}
+
 export function getCredentials() {
     return {
         bucketid : BUCKET,

@@ -65,6 +65,14 @@ function getClassSpec(spec: Types.PendingJobData): ObjectTypes.ClassSpec {
 
 export function processJob(job: Types.PendingJob): Promise<void> {
 
+    // every job type deletes from object storage, so without it there is
+    //  nothing to delete - resolving lets the runner remove the job instead
+    //  of it failing and blocking the queue
+    if (!objectstore.isConfigured()) {
+        log.debug({ job }, 'Object storage not configured - skipping pending job');
+        return Promise.resolve();
+    }
+
     switch (job.jobtype) {
     case Types.PendingJobType.DeleteOneObjectFromObjectStorage:
         return objectstore.deleteObject(getObjectSpec(job.jobdata));

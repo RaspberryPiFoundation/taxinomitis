@@ -374,4 +374,29 @@ describe('Pending jobs - processor', () => {
         });
     });
 
+
+    // ------------------------------------------------------------------
+    //  no object storage
+    // ------------------------------------------------------------------
+
+    describe('without object storage', () => {
+
+        it('completes jobs without deleting anything', async () => {
+            const target = objectSpec(uuid(), uuid(), uuid(), uuid());
+            await storeObject(target);
+
+            const configuredStub = sinon.stub(objectstore, 'isConfigured').returns(false);
+            try {
+                await processor.processJob(dbobjects.createDeleteObjectStoreJob(target));
+                await processor.processJob(dbobjects.createDeleteUserObjectsJob(target));
+                await processor.processJob(dbobjects.createDeleteClassObjectsJob(target));
+            }
+            finally {
+                configuredStub.restore();
+            }
+
+            await assertAllPresent([ target ]);
+        });
+    });
+
 });
