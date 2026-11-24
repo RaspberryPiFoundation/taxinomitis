@@ -155,3 +155,27 @@ Without accounts, starting a "Try it now" session needs a [Cloudflare Turnstile]
 ```
 
 The website will be running at `http://localhost:3000`.
+
+### Running the numbers service
+
+"Recognising numbers" projects are trained by the separate numbers service in [`mlforkids-newnumbers`](./mlforkids-newnumbers). Without it, training those models fails with "Invalid URL". To run it in Docker, from the `mlforkids-newnumbers` directory:
+
+```sh
+docker build --platform linux/amd64 -t mlforkids-newnumbers .
+docker run -p 8000:8000 --platform linux/amd64 \
+  -e VERIFY_USER=testuser \
+  -e VERIFY_PASSWORD=testpass \
+  -e PUBLIC_API_URL=http://localhost:8000 \
+  mlforkids-newnumbers
+```
+
+Then add these to the mlforkids-api `docker run` command:
+
+```sh
+  -e NUMBERS_SERVICE=http://host.docker.internal:8000 \
+  -e NUMBERS_SERVICE_USER=testuser \
+  -e NUMBERS_SERVICE_PASS=testpass \
+  -e NUMBERS_SERVICE_HOSTS=http://localhost:8000 \
+```
+
+The API container reaches the service through `host.docker.internal` (`NUMBERS_SERVICE`). Your browser downloads trained models from it at `localhost:8000` (`PUBLIC_API_URL`, allowed by `NUMBERS_SERVICE_HOSTS`). The service allows `http://localhost:3000` as a CORS origin by default. If the site runs anywhere else, set `CORS_ORIGINS` on the service to a comma-separated list of the site URLs.

@@ -147,6 +147,9 @@ After this, deploys go through the pipeline's GitHub integration, either automat
 | `NODE_ENV` | `production` | Sends the app's logs to stdout and stderr, so they show up in `heroku logs`. Without it, the logs are written to a file inside the dyno. |
 | `CLOUDFLARE_TURNSTILE_SITE_KEY` | Your Turnstile widget's site key | Passed to the front-end at runtime for the captcha shown when a "Try it now" session starts. Required when `ACCOUNTS_ENABLED=false`: the app won't start without it. |
 | `CLOUDFLARE_TURNSTILE_SECRET_KEY` | Your Turnstile widget's secret key | Used by the API to check the captcha before starting a session. Required when `ACCOUNTS_ENABLED=false`. |
+| `NUMBERS_SERVICE` | The [numbers service](#numbers-service)'s URL | Where the API sends training data for "recognising numbers" projects. Without it, training those models fails with "Invalid URL". |
+| `NUMBERS_SERVICE_USER`, `NUMBERS_SERVICE_PASS` | The numbers service's `VERIFY_USER` and `VERIFY_PASSWORD` | Credentials the API uses to call the numbers service. |
+| `NUMBERS_SERVICE_HOSTS` | The numbers service's URL | Lets browsers download trained models from the numbers service, by adding it to the site's Content Security Policy. Separate several URLs with commas. |
 
 You don't need to set `PORT` (Heroku sets it) or `HOST` (it defaults to `0.0.0.0`). You don't need any Auth0, SMTP or IBM Cloud config either.
 
@@ -173,12 +176,71 @@ Each deleted session also queues a request to delete its files from object stora
 heroku pg:psql -a your-app-name -c "DELETE FROM mlforkidsdb.pendingjobs;"
 ```
 
+### Numbers service
+
+"Recognising numbers" projects are trained by the separate numbers service in [`mlforkids-newnumbers`](./mlforkids-newnumbers), a Python app. It runs as a second Heroku app.
+
+The API sends a project's training data to the service, which trains the model in the background. Browsers then download the trained model from the service directly. So the service has to allow the site as a CORS origin, and the site has to allow the service in its Content Security Policy.
+
+A repo can only have one root `heroku.yml`, and this repo's builds mlforkids-api. So the numbers service is deployed through the [Heroku Container Registry](https://devcenter.heroku.com/articles/container-registry-and-runtime) instead: you build its image locally and push it. The pipeline's GitHub integration doesn't deploy it.
+
+1. Create the app and set its stack to `container`:
+   ```sh
+   heroku create your-numbers-app-name
+   heroku stack:set container -a your-numbers-app-name
+   ```
+
+   Get its URL from the "Web URL" shown by `heroku apps:info -a your-numbers-app-name`. Heroku adds a random suffix to new apps' hostnames, so the URL isn't just the app name.
+
+2. Choose a username and password for the API to use, and set the service's config vars:
+   ```sh
+   heroku config:set -a your-numbers-app-name \
+     VERIFY_USER=your-username \
+     VERIFY_PASSWORD=your-password \
+     PUBLIC_API_URL=https://your-numbers-app-url \
+     CORS_ORIGINS=https://your-site-url
+   ```
+
+3. Build and push the image from the repo root, then release it. Heroku runs `linux/amd64` images, so the build needs `--platform` on Apple Silicon:
+   ```sh
+   heroku container:login
+   docker build --platform linux/amd64 -t registry.heroku.com/your-numbers-app-name/web mlforkids-newnumbers
+   docker push registry.heroku.com/your-numbers-app-name/web
+   heroku container:release web -a your-numbers-app-name
+   ```
+
+   Repeat this step to deploy changes to the service.
+
+4. Point mlforkids-api at the service:
+   ```sh
+   heroku config:set -a your-app-name \
+     NUMBERS_SERVICE=https://your-numbers-app-url \
+     NUMBERS_SERVICE_USER=your-username \
+     NUMBERS_SERVICE_PASS=your-password \
+     NUMBERS_SERVICE_HOSTS=https://your-numbers-app-url
+   ```
+
+The service's config vars:
+
+| Config var | Value | Notes |
+| ---------- | ----- | ----- |
+| `VERIFY_USER`, `VERIFY_PASSWORD` | A username and password of your choice | The API has to send these to train a model. They must match `NUMBERS_SERVICE_USER` and `NUMBERS_SERVICE_PASS`. Required: the service won't start without them. |
+| `PUBLIC_API_URL` | The service's own URL, with no trailing slash | Used to build the URLs that browsers download trained models from. Required. |
+| `CORS_ORIGINS` | The site's URL | The sites allowed to download trained models. Separate several URLs with commas. The default, `http://localhost:3000,https://machinelearningforkids.co.uk`, doesn't include your site. |
+
+You don't need to set `PORT`, because Heroku sets it.
+
+Before relying on the service, be aware that:
+- **Trained models are lost when the dyno restarts.** The service saves them on the dyno's filesystem, which Heroku wipes on every deploy and restart, and dynos restart at least once a day. Browsers keep their own copy of a model once it's downloaded, so the project itself carries on working. But a model that was still training is lost. The Python and Colab pages also stop working for the project until it's trained again, because their code downloads the model from the service.
+- **It has to run on one dyno.** Each dyno has its own filesystem, so a second dyno wouldn't have the first one's models.
+- **Memory:** upstream gives the service 1 GB. In a local test, training a small model used about 220 MB, so a 512 MB dyno may be enough. If `heroku logs` shows R14 (memory quota exceeded) errors, move to a larger dyno.
+
 ### Limitations
 
 These features depend on services that this deployment doesn't have:
 
 - **"Recognising text" projects:** models are trained by IBM Watson Assistant, whether the project is stored in the browser or in the cloud. Training a text model fails. With accounts off, the new-project form doesn't offer these projects, and the dataset import page leaves out the 3 text datasets. A text project can still be imported from a project file, but it can't be trained.
-- **"Recognising numbers" projects:** models are trained by the separate numbers service in [`mlforkids-newnumbers`](./mlforkids-newnumbers). It has no IBM dependencies, but deploying it isn't covered here. Without it, training fails. To use one, set `NUMBERS_SERVICE`, `NUMBERS_SERVICE_USER`, `NUMBERS_SERVICE_PASS` and `NUMBERS_SERVICE_HOSTS`.
+- **"Recognising numbers" projects:** models are trained by the separate numbers service in [`mlforkids-newnumbers`](./mlforkids-newnumbers), which has to be deployed as well. See [Numbers service](#numbers-service). Without it, training fails with "Invalid URL".
 - **Cloud project storage:** images and sounds for cloud projects are stored in IBM Cloud Object Storage. With accounts off, the option to store projects in the cloud is hidden, so projects are stored in the browser. A browser that can't store projects can't create them at all, and the site shows a warning.
 - **Scratch:** Scratch is served at `/scratch/` by the separate [`mlforkids-scratch`](./mlforkids-scratch) component, a static nginx site that this app doesn't serve. Links into Scratch end up in a redirect loop unless something routes `/scratch/` on the same domain to a copy of it.
 

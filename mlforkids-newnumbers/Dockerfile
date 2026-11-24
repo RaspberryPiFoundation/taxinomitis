@@ -20,4 +20,5 @@ ENV MODELS_CACHE_SIZE 100
 ENV MODE production
 ENV OPENAPI_URL ""
 
-CMD ["/home/mlforkids/.local/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# listen on the port given in $PORT where the platform assigns one (such as Heroku), otherwise 8000
+CMD ["sh", "-c", "exec /home/mlforkids/.local/bin/uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

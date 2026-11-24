@@ -25,12 +25,18 @@ from app.auth import validate_password
 info("Preparing API server")
 app = FastAPI(openapi_url=None)
 security = HTTPBasic()
+
+# web pages download trained models from here directly, so the sites that
+#  use this service need to be allowed origins. Set CORS_ORIGINS to a
+#  comma-separated list of them to replace the defaults
+DEFAULT_CORS_ORIGINS = "http://localhost:3000,https://machinelearningforkids.co.uk"
+cors_origins = [origin.strip()
+                for origin in getenv("CORS_ORIGINS", DEFAULT_CORS_ORIGINS).split(",")
+                if origin.strip()]
+info("Allowing CORS origins %s", cors_origins)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "https://machinelearningforkids.co.uk"
-    ]
+    allow_origins=cors_origins
 )
 
 # healthcheck endpoint for use by kubernetes probes
