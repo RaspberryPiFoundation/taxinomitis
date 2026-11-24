@@ -76,4 +76,5 @@ RUN ls -l /usr/src/app
 # otherwise default to 3000
 EXPOSE ${PORT:-3000}
 
-CMD ["npm", "start"]
+# run node directly rather than via "npm start" (npm doesn't pass on SIGINT/SIGTERM, so the app can't shut down cleanly)
+CMD ["node", "dist/lib/app.js"]
