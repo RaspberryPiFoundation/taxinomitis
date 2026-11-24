@@ -150,6 +150,7 @@ After this, deploys go through the pipeline's GitHub integration, either automat
 | `NUMBERS_SERVICE` | The [numbers service](#numbers-service)'s URL | Where the API sends training data for "recognising numbers" projects. Without it, training those models fails with "Invalid URL". |
 | `NUMBERS_SERVICE_USER`, `NUMBERS_SERVICE_PASS` | The numbers service's `VERIFY_USER` and `VERIFY_PASSWORD` | Credentials the API uses to call the numbers service. |
 | `NUMBERS_SERVICE_HOSTS` | The numbers service's URL | Lets browsers download trained models from the numbers service, by adding it to the site's Content Security Policy. Separate several URLs with commas. |
+| `PLAUSIBLE_SOURCE` | The site's Plausible script URL (`https://plausible.io/js/pa-….js`), from its site installation settings in Plausible | Optional. Adds [Plausible](https://plausible.io) analytics to the site, with [hash-based routing](https://plausible.io/docs/hash-based-routing) so that each `/#!/` page is tracked separately. It needs the site-specific script, which reads `plausible.init` options. With accounts off, upstream's Cabin analytics are left out whether or not this is set. |
 
 You don't need to set `PORT` (Heroku sets it) or `HOST` (it defaults to `0.0.0.0`). You don't need any Auth0, SMTP or IBM Cloud config either.
 

@@ -151,6 +151,65 @@ describe('Utils - env', () => {
         });
     });
 
+    describe('Plausible script', () => {
+
+        const VARS = [ 'ACCOUNTS_ENABLED', 'PLAUSIBLE_SOURCE' ];
+        const oldValues: { [name: string]: string | undefined } = {};
+
+        before(() => {
+            for (const name of VARS) {
+                oldValues[name] = process.env[name];
+            }
+        });
+        after(() => {
+            for (const name of VARS) {
+                if (oldValues[name] === undefined) {
+                    delete process.env[name];
+                }
+                else {
+                    process.env[name] = oldValues[name];
+                }
+            }
+        });
+
+        it('should be optional', () => {
+            delete process.env.PLAUSIBLE_SOURCE;
+            assert.strictEqual(env.getPlausibleSource(), undefined);
+
+            process.env.PLAUSIBLE_SOURCE = '';
+            assert.strictEqual(env.getPlausibleSource(), undefined);
+        });
+
+        it('should return the script URL', () => {
+            process.env.PLAUSIBLE_SOURCE = 'https://plausible.io/js/pa-abc123.js';
+            assert.strictEqual(env.getPlausibleSource(), 'https://plausible.io/js/pa-abc123.js');
+        });
+
+        it('should reject anything that is not a web URL', () => {
+            for (const value of [ 'not a url', 'javascript:alert(1)', 'ftp://plausible.io/js/script.js' ]) {
+                process.env.PLAUSIBLE_SOURCE = value;
+                assert.throws(
+                    () => env.getPlausibleSource(),
+                    { message: 'Invalid URL in environment variable PLAUSIBLE_SOURCE' }
+                );
+            }
+        });
+
+        it('should stop the app starting with an invalid URL', () => {
+            process.env.POSTGRESQLHOST = 'localhost';
+            process.env.POSTGRESQLPORT = '5432';
+            process.env.POSTGRESQLUSER = 'postgres';
+            process.env.POSTGRESQLDATABASE = 'mlforkids';
+            delete process.env.ACCOUNTS_ENABLED;
+            process.env.PLAUSIBLE_SOURCE = 'not a url';
+
+            assert.throws(
+                () => env.confirmRequiredEnvironment(),
+                { message: 'Invalid URL in environment variable PLAUSIBLE_SOURCE' }
+            );
+        });
+    });
+
 });
 
 

@@ -139,6 +139,26 @@ if (deployment.isProdDeployment() && process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY
     CSP_DIRECTIVES.trustedTypes.push('challenges.cloudflare.com');
 }
 
+// Cabin analytics belong to machinelearningforkids.co.uk. Sites without accounts are run by
+//  someone else, so the Cabin script is left out of index.html (see injectRuntimeConfig) and
+//  blocked here as well
+const CABIN_HOST = 'withcabin.com';
+if (!env.accountsEnabled()) {
+    for (const directive of Object.keys(CSP_DIRECTIVES)) {
+        CSP_DIRECTIVES[directive] = CSP_DIRECTIVES[directive].filter((source) => !source.includes(CABIN_HOST));
+    }
+}
+
+// Plausible analytics, if the site has a script for them. The script sends its events to the
+//  host that it's loaded from
+const plausibleSource = env.getPlausibleSource();
+if (plausibleSource) {
+    const plausibleOrigin = new URL(plausibleSource).origin;
+    CSP_DIRECTIVES.scriptSrc.push(plausibleOrigin);
+    CSP_DIRECTIVES.scriptSrcElem.push(plausibleOrigin);
+    CSP_DIRECTIVES.connectSrc.push(plausibleOrigin);
+}
+
 
 function removeFrameBlockingHeaders(req: express.Request, res: express.Response, next: express.NextFunction): void {
     res.removeHeader('x-frame-options');
@@ -242,12 +262,10 @@ export function setupUI(app: express.Application): void {
 
 
 /**
- * Reads the built index.html and injects a script that exposes the current
- *  runtime config values (feature flags, the Turnstile site key and the
- *  "Try it now" session length) as globals (read by the front-end during
- *  Angular bootstrap). Returns
- *  undefined if the file cannot be read or the expected injection point is
- *  missing, so the caller falls back to serving the static file unmodified
+ * Reads the built index.html and adds the runtime config to it (see
+ *  injectRuntimeConfig). Returns undefined if the file cannot be read or the
+ *  expected injection point is missing, so the caller falls back to serving
+ *  the static file unmodified
  */
 function buildIndexHtmlWithRuntimeConfig(indexHtmlFile: string): string | undefined {
     let html: string;
@@ -255,6 +273,26 @@ function buildIndexHtmlWithRuntimeConfig(indexHtmlFile: string): string | undefi
         html = fs.readFileSync(indexHtmlFile, 'utf8');
     }
     catch (err) {
+        return undefined;
+    }
+    return injectRuntimeConfig(html);
+}
+
+
+// The Cabin analytics script tag in index.html. The build minifies index.html, which
+//  rewrites the tag's attributes, so this doesn't rely on their exact form
+const CABIN_SCRIPT_TAG = /<script\b[^>]*\bsrc="?https:\/\/scripts\.withcabin\.com\/[^>]*><\/script>/g;
+
+/**
+ * Adds a script to index.html that exposes the current runtime config values
+ *  (feature flags, the Turnstile site key and the "Try it now" session length)
+ *  as globals (read by the front-end during Angular bootstrap). Also adds
+ *  Plausible analytics if PLAUSIBLE_SOURCE is set, and removes Cabin analytics
+ *  when accounts are disabled. Returns undefined if the expected injection
+ *  point is missing
+ */
+export function injectRuntimeConfig(html: string): string | undefined {
+    if (html.indexOf('</head>') === -1) {
         return undefined;
     }
 
@@ -269,11 +307,27 @@ function buildIndexHtmlWithRuntimeConfig(indexHtmlFile: string): string | undefi
         runtimeConfig += 'window.TURNSTILE_SITE_KEY = ' + JSON.stringify(turnstileSiteKey).replace(/</g, '\\u003c') + ';';
     }
 
-    const runtimeConfigScript = '<script>' + runtimeConfig + '</script>';
+    let headScripts = '<script>' + runtimeConfig + '</script>';
 
-    if (html.indexOf('</head>') === -1) {
-        return undefined;
+    // Plausible analytics, with the site-specific script and the queue that it reads once it has loaded
+    //  (cf. https://plausible.io/docs/hash-based-routing)
+    const plausibleSource = env.getPlausibleSource();
+    if (plausibleSource) {
+        headScripts += '<script async src="' + plausibleSource.replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '"></script>' +
+            '<script>' +
+                'window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)};' +
+                'plausible.init=plausible.init||function(i){plausible.o=i||{}};' +
+                // every page is at /#!/..., so without hash-based routing they'd all be tracked as /
+                'plausible.init({hashBasedRouting:true});' +
+            '</script>';
     }
-    return html.replace('</head>', runtimeConfigScript + '</head>');
+
+    // Cabin analytics belong to machinelearningforkids.co.uk (see CSP_DIRECTIVES)
+    if (!env.accountsEnabled()) {
+        html = html.replace(CABIN_SCRIPT_TAG, '');
+    }
+
+    // (using a function, so that "$" in the injected values isn't treated as a replacement pattern)
+    return html.replace('</head>', () => headScripts + '</head>');
 }
 

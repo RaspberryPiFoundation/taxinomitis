@@ -34,6 +34,7 @@ export const CLOUDFLARE_TURNSTILE_SECRET_KEY = 'CLOUDFLARE_TURNSTILE_SECRET_KEY'
 export const CLOUDFLARE_TURNSTILE_SITE_KEY = 'CLOUDFLARE_TURNSTILE_SITE_KEY';
 const MAINTENANCE_MODE = 'MAINTENANCE_MODE';
 const ACCOUNTS_ENABLED = 'ACCOUNTS_ENABLED';
+const PLAUSIBLE_SOURCE = 'PLAUSIBLE_SOURCE';
 
 
 const DEFAULT = [
@@ -69,6 +70,9 @@ export function confirmRequiredEnvironment() {
     if (!accountsEnabled()) {
         NO_ACCOUNTS.forEach(checkEnv);
     }
+
+    // optional, but fail on a mistyped URL rather than serve pages that can't load the script
+    getPlausibleSource();
 }
 
 
@@ -97,6 +101,27 @@ export function inMaintenanceMode() {
 // The Cloudflare Turnstile site key used by the front-end, if one has been provided at runtime
 export function getTurnstileSiteKey(): string | undefined {
     return process.env[CLOUDFLARE_TURNSTILE_SITE_KEY];
+}
+
+// URL of the Plausible analytics script for the site - the site-specific "pa-....js" script from
+//  the site's installation settings in Plausible. Analytics are only added to the site when this is set
+export function getPlausibleSource(): string | undefined {
+    const source = process.env[PLAUSIBLE_SOURCE];
+    if (!source) {
+        return undefined;
+    }
+
+    let url: URL;
+    try {
+        url = new URL(source);
+    }
+    catch (err) {
+        throw new Error('Invalid URL in environment variable ' + PLAUSIBLE_SOURCE);
+    }
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+        throw new Error('Invalid URL in environment variable ' + PLAUSIBLE_SOURCE);
+    }
+    return url.href;
 }
 
 // Whether the accounts system (teacher sign-up, student/class management, Auth0 login) is available
