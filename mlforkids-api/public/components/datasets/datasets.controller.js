@@ -219,6 +219,13 @@
                         }
                     ];
 
+                    // "recognising text" projects aren't offered without accounts (the new-project form hides them too)
+                    if (!$rootScope.accountsEnabled) {
+                        vm.datasets = vm.datasets.filter(function (dataset) {
+                            return dataset.type !== 'text';
+                        });
+                    }
+
                     browserStorageService.isSupported()
                         .then((supported) => {
                             localStorageSupported = (supported === 1);

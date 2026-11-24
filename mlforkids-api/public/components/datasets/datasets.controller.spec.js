@@ -16,6 +16,9 @@ describe('DatasetsController', function () {
         $controller = _$controller_;
         $q = _$q_;
         $rootScope = _$rootScope_;
+
+        // set by app.run.js in the real app, where accounts are enabled by default
+        $rootScope.accountsEnabled = true;
     }));
 
     beforeEach(function () {
@@ -90,6 +93,16 @@ describe('DatasetsController', function () {
 
             var headlines = vm.datasets.find(function (d) { return d.id === 'uk-newspaper-headlines'; });
             expect(headlines.type).toBe('text');
+        });
+
+        it('leaves out "recognising text" datasets when accounts are disabled', function () {
+            $rootScope.accountsEnabled = false;
+
+            var vm = createReadyController();
+
+            expect(vm.datasets.length).toBe(13);
+            expect(vm.datasets.some(function (d) { return d.type === 'text'; })).toBe(false);
+            expect(vm.datasets.find(function (d) { return d.id === 'titanic'; })).toBeDefined();
         });
 
         it('records an error alert if fetching the profile fails', function () {

@@ -177,11 +177,11 @@ heroku pg:psql -a your-app-name -c "DELETE FROM mlforkidsdb.pendingjobs;"
 
 These features depend on services that this deployment doesn't have:
 
-- **"Recognising text" projects:** models are trained by IBM Watson Assistant, whether the project is stored in the browser or in the cloud. Training a text model fails.
+- **"Recognising text" projects:** models are trained by IBM Watson Assistant, whether the project is stored in the browser or in the cloud. Training a text model fails. With accounts off, the new-project form doesn't offer these projects, and the dataset import page leaves out the 3 text datasets. A text project can still be imported from a project file, but it can't be trained.
 - **"Recognising numbers" projects:** models are trained by the separate numbers service in [`mlforkids-newnumbers`](./mlforkids-newnumbers). It has no IBM dependencies, but deploying it isn't covered here. Without it, training fails. To use one, set `NUMBERS_SERVICE`, `NUMBERS_SERVICE_USER`, `NUMBERS_SERVICE_PASS` and `NUMBERS_SERVICE_HOSTS`.
 - **Cloud project storage:** images and sounds for cloud projects are stored in IBM Cloud Object Storage. With accounts off, the option to store projects in the cloud is hidden, so projects are stored in the browser. A browser that can't store projects can't create them at all, and the site shows a warning.
 - **Scratch:** Scratch is served at `/scratch/` by the separate [`mlforkids-scratch`](./mlforkids-scratch) component, a static nginx site that this app doesn't serve. Links into Scratch end up in a redirect loop unless something routes `/scratch/` on the same domain to a copy of it.
 
-"Recognising images", "recognising sounds", "predicting numbers" and "generating text" projects all train in the browser and don't need anything else.
+"Recognising images", "recognising sounds", "predicting numbers" and "generating text" projects all train in the browser and don't need anything else. With accounts off, though, the new-project form doesn't offer "generating text" projects.
 
-Some features also call machinelearningforkids.co.uk directly, wherever the site is deployed. For example, "generating text" projects look up Wikipedia through `proxy.machinelearningforkids.co.uk`.
+Some features also call machinelearningforkids.co.uk directly, wherever the site is deployed. For example, "generating text" projects (not offered with accounts off) look up Wikipedia through `proxy.machinelearningforkids.co.uk`.
