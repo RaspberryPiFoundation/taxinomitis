@@ -28,10 +28,27 @@
                 teacher_language_models : true,
                 siteadmin : true
             };
+            // Pages that need a user. Without accounts, the only way to get one is a "Try it now"
+            // session started from the welcome page, so visitors without a session are sent
+            // there instead of being shown a "Log in" prompt that won't work
+            var sessionOnlyStates = {
+                projects : true,
+                newproject : true,
+                importdataset : true,
+                importproject : true
+            };
+            var needsSession = function (stateName) {
+                return sessionOnlyStates[stateName] || stateName.indexOf('mlproject') === 0;
+            };
+
             $transitions.onBefore({}, function (transition) {
                 var target = transition.to().name;
                 if (accountOnlyStates[target]) {
                     loggerService.debug('[ml4kapp] blocking navigation to account page', target);
+                    return $state.target('welcome');
+                }
+                if (needsSession(target) && !$rootScope.isAuthenticated) {
+                    loggerService.debug('[ml4kapp] no session for page', target);
                     return $state.target('welcome');
                 }
             });
