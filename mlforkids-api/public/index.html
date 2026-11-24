@@ -54,7 +54,7 @@
                             <li ng-if="isAuthenticated && isTeacher"><a ui-sref="teacher" data-toggle="collapse" data-target=".navbar-collapse.in" translate="APP.TEACHER"></a></li>
                             <li ng-if="isAuthenticated"><a ui-sref="projects" data-toggle="collapse" data-target=".navbar-collapse.in" translate="APP.PROJECTS"></a></li>
                             <li><a ui-sref="worksheets" data-toggle="collapse" data-target=".navbar-collapse.in" translate="APP.WORKSHEETS"></a></li>
-                            <li><a ui-sref="pretrained" data-toggle="collapse" data-target=".navbar-collapse.in" translate="APP.PRETRAINED"></a></li>
+                            <li ng-if="accountsEnabled"><a ui-sref="pretrained" data-toggle="collapse" data-target=".navbar-collapse.in" translate="APP.PRETRAINED"></a></li>
                             <li><a ui-sref="stories({ storyId: 'intro' })" data-toggle="collapse" data-target=".navbar-collapse.in" translate="APP.STORIES" class="navbarextended"></a></li>
                             <li><a ui-sref="book" data-toggle="collapse" data-target=".navbar-collapse.in" translate="BOOK.TITLE" class="navbarextended"></a></li>
                             <li><a ui-sref="help" data-toggle="collapse" data-target=".navbar-collapse.in" translate="APP.HELP"></a></li>

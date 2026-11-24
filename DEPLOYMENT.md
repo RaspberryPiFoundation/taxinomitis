@@ -138,6 +138,16 @@ If the app was deployed before the schema was loaded, restart it afterwards with
 
 After this, deploys go through the pipeline's GitHub integration, either automatically or manually. You can watch startup with `heroku logs --tail -a your-app-name`.
 
+### Deploying front-end changes
+
+Browsers cache the front-end's files for up to a year. The app serves everything under `/static/` with a one-year cache lifetime, and `index.html` with a one-hour cache lifetime. Scripts, stylesheets, page templates and translations are requested with a version number (`?v=360`), so changing that number is the only way to get returning visitors to fetch new copies.
+
+The version number doesn't change with each build. Upstream bumps it on every release, with `npm run prepare-release` in `mlforkids-api`. That updates the number in `index.html`, `app.js`, `logger.service.js`, `prod-sentry.js` and `ops/app.env`. Deploys of this fork don't do that, so without a bump, returning visitors keep seeing the old front-end.
+
+To deploy changes to anything under `mlforkids-api/public/`, run `npm run prepare-release` and commit the result first. Upstream bumps the same lines, so merging from upstream will then conflict on them. Resolve that by taking the higher number and adding one.
+
+While testing locally, turn on "Disable cache" in your browser's dev tools, or you may see old templates after rebuilding.
+
 ### Config vars
 
 | Config var | Value | Notes |
@@ -243,7 +253,7 @@ These features depend on services that this deployment doesn't have:
 - **"Recognising text" projects:** models are trained by IBM Watson Assistant, whether the project is stored in the browser or in the cloud. Training a text model fails. With accounts off, the new-project form doesn't offer these projects, and the dataset import page leaves out the 3 text datasets. A text project can still be imported from a project file, but it can't be trained.
 - **"Recognising numbers" projects:** models are trained by the separate numbers service in [`mlforkids-newnumbers`](./mlforkids-newnumbers), which has to be deployed as well. See [Numbers service](#numbers-service). Without it, training fails with "Invalid URL".
 - **Cloud project storage:** images and sounds for cloud projects are stored in IBM Cloud Object Storage. With accounts off, the option to store projects in the cloud is hidden, so projects are stored in the browser. A browser that can't store projects can't create them at all, and the site shows a warning.
-- **Scratch:** Scratch is served at `/scratch/` by the separate [`mlforkids-scratch`](./mlforkids-scratch) component, a static nginx site that this app doesn't serve. Links into Scratch end up in a redirect loop unless something routes `/scratch/` on the same domain to a copy of it.
+- **Scratch:** Scratch is served at `/scratch/` by the separate [`mlforkids-scratch`](./mlforkids-scratch) component, a static nginx site that this app doesn't serve. With accounts off, the site hides the ways into Scratch: the Scratch option on a project's "Make" page, the nav bar link to the "Pretrained" page, which is all about Scratch extensions, and the welcome page's third step ("Make a game in Scratch…"). "Recognising images", "recognising sounds" and "predicting numbers" projects can only be used in Scratch, so their "Make" step is hidden as well. Going to `/scratch` directly still ends in a redirect loop.
 
 "Recognising images", "recognising sounds", "predicting numbers" and "generating text" projects all train in the browser and don't need anything else. With accounts off, though, the new-project form doesn't offer "generating text" projects.
 

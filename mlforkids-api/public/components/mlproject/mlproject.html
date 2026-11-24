@@ -35,7 +35,8 @@
                         translate="PROJECT.LEARNANDTEST.TITLE"></button>
             </div>
         </div>
-        <div class="mlprojectmenuexpanded">
+        <!-- Scratch isn't deployed without accounts, so only show this if there's something else to make -->
+        <div class="mlprojectmenuexpanded" ng-if="accountsEnabled || makes.python">
             <div class="mlprojectmenutitle" translate="PROJECT.MAKES.TITLE"></div>
             <div class="mlprojectmenudescription" translate="PROJECT.MAKES.BODY_SCRATCHPYTHONAPPINV"
                  ng-if="makes.scratch && makes.python && !makes.edublocks"></div>
